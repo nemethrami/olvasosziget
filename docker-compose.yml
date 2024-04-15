@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  # react-frontend:
+  #   build: ${FRONTEND_ROOT}
+  #   ports:
+  #     - "8080:8080"
+  #   restart: always
+  #   depends_on:
+  #     - backend
+  #   volumes:
+  #     - ${FRONTEND_ROOT}:/usr/src/super-pancake/react-frontend
+  #     - /usr/src/super-pancake/react-frontend/node_modules
+
+  # backend:
+  #   build: ${BACKEND_ROOT}
+  #   ports:
+  #     - "8000:8000"
+  #   restart: always
+  #   depends_on:
+  #     - mongodb
+  #     - mysqldb
+  #   env_file:
+  #     - back_env_vars.env
+  #   volumes:
+  #     - ${BACKEND_ROOT}:/usr/src/super-pancake/backend
+
+  mysqldb:
+    image: "mysql:latest"
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    restart: always
+    env_file:
+      - mysql_env_vars.env
