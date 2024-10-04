@@ -8,7 +8,8 @@ import ImageListItemBar from '@mui/material/ImageListItemBar';
 import IconButton from '@mui/material/IconButton';
 import InfoIcon from '@mui/icons-material/Info';
 import "./BookSearch.css";
-
+import InputBase from '@mui/material/InputBase';
+import SearchIcon from '@mui/icons-material/Search';
 
 function BookSearch() {
 
@@ -49,19 +50,18 @@ function BookSearch() {
     }
 
     return (
-        <div className="container">
-            <h1 className='subtitle'>Book Search</h1>
+        <>
             <form onSubmit={handleSubmit} className='form'>
-                <div className="form-group">
-                    <input 
-                        type="text" 
-                        onChange={handleChange}
-                        className="form-control mt-10" 
-                        placeholder="Search for books" 
-                        autoComplete="off" 
-                    />
-                </div>
-                <button type="submit" className="submit-button">Search</button>
+                <InputBase
+                    onChange={handleChange}
+                    sx={{ flex: 1}}
+                    placeholder="Search for books"
+                    inputProps={{ 'aria-label': 'search books' }}
+                    autoComplete='off'
+                />
+                <IconButton type="submit" sx={{ p: '10px' }} aria-label="search">
+                    <SearchIcon />
+                </IconButton>
             </form>
             <ImageList sx={{ width: '100%', height: 650 }} cols={8}>
                 {result.map((book: BookModel) => (
@@ -89,7 +89,7 @@ function BookSearch() {
                     </ImageListItem>
                 ))}
             </ImageList>
-        </div>
+        </>
     )
 }
 
