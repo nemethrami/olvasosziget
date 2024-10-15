@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TextField, List, ListItem, ListItemText, CircularProgress } from '@mui/material';
 import axios from 'axios';
 import "./PeopleSearch.css";
+import Box from '@mui/material/Box';
 
 interface User {
   id: string;
@@ -20,7 +21,7 @@ const PeopleSearch = () => {
         setLoading(true);
         try {
           // API hívás, hogy megszerezd a felhasználókat
-          const response = await axios.get(`/api/searchUsers?query=${searchQuery}`);
+          const response = await axios.get<User[]>(`/api/searchUsers?query=${searchQuery}`);
           setSearchResults(response.data);
         } catch (error) {
           console.error('Hiba történt a keresés során:', error);
@@ -40,13 +41,21 @@ const PeopleSearch = () => {
   }, [searchQuery]);
 
   return (
-    <div>
+    <Box 
+      sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: '20px',  // Kicsi távolság a keresőmező és az eredmények között
+      }}
+      >
       <TextField
         label="Keresés"
         variant="outlined"
         fullWidth
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
+        sx={{ width: '30%' }}
       />
 
       {loading ? (
@@ -60,7 +69,7 @@ const PeopleSearch = () => {
           ))}
         </List>
       )}
-    </div>
+    </Box>
   );
 };
 

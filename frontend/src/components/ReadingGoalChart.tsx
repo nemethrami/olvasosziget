@@ -13,7 +13,7 @@ const ReadingGoalChart: React.FC = () => {
       {
         label: 'Olvasott könyvek száma',
         data: [5, 10, 8, 7, 12], // Ezek a könyvek számai hónapokra lebontva
-        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        backgroundColor: '#858c67',
       },
     ],
   };

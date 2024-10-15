@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Dialog, DialogTitle, DialogContent, TextField, DialogActions, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material';
+import '../index.css'
 
 type ChatRoom = {
   id: number;
@@ -61,86 +62,127 @@ const ChatRooms = () => {
 
   // Tábla renderelő funkció
   const renderTable = (rooms: ChatRoom[]) => (
-    <TableContainer component={Paper} sx={{ marginTop: 2 }}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Szoba neve</TableCell>
-            <TableCell>Létrehozó</TableCell>
-            <TableCell>Létrehozás dátuma</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rooms.map((room) => (
-            <TableRow key={room.id}>
-              <TableCell>{room.name}</TableCell>
-              <TableCell>{room.creator}</TableCell>
-              <TableCell>{room.createdAt}</TableCell>
+    <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: 2 }}>
+      <TableContainer component={Paper} sx={{ maxWidth: '600px', width: '100%' }}>
+        <Table sx={{ fontSize: '0.875rem' }}>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ padding: '8px' }}>Szoba neve</TableCell>
+              <TableCell sx={{ padding: '8px' }}>Létrehozó</TableCell>
+              <TableCell sx={{ padding: '8px' }}>Létrehozás dátuma</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
-
-  return (
-    <Box>
-      {/* Tabok létrehozása */}
-      <Tabs value={selectedTab} onChange={handleTabChange} centered>
-        <Tab label="Nyilvános" />
-        <Tab label="Privát" />
-      </Tabs>
-
-      {/* A kiválasztott tab tartalmának megjelenítése */}
-      {selectedTab === 0 && (
-        <Box>
-          {renderTable(publicRooms)}
-        </Box>
-      )}
-      {selectedTab === 1 && (
-        <Box>
-          {renderTable(privateRooms)}
-        </Box>
-      )}
-
-      {/* Új szoba létrehozása gomb */}
-      <Button variant="contained" color="primary" onClick={handleOpenDialog} sx={{ marginTop: 2 }}>
-        Létrehozás
-      </Button>
-
-      {/* Létrehozás dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Létrehozás</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Szoba neve"
-            fullWidth
-            value={newRoomName}
-            onChange={(e) => setNewRoomName(e.target.value)}
-            sx={{ marginBottom: 2 }}
-          />
-          <FormControl component="fieldset">
-            <FormLabel component="legend">Szoba típusa</FormLabel>
-            <RadioGroup
-              value={isPrivate ? 'private' : 'public'}
-              onChange={(e) => setIsPrivate(e.target.value === 'private')}
-            >
-              <FormControlLabel value="public" control={<Radio />} label="Nyilvános" />
-              <FormControlLabel value="private" control={<Radio />} label="Privát" />
-            </RadioGroup>
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="secondary">
-            Mégse
-          </Button>
-          <Button onClick={handleAddRoom} color="primary">
-            Létrehozás
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </TableHead>
+          <TableBody>
+            {rooms.map((room) => (
+              <TableRow key={room.id}>
+                <TableCell sx={{ padding: '8px' }}>{room.name}</TableCell>
+                <TableCell sx={{ padding: '8px' }}>{room.creator}</TableCell>
+                <TableCell sx={{ padding: '8px' }}>{room.createdAt}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </Box>
   );
-};
+  
+  return (
+      <Box>
+        {/* Tabok létrehozása */}
+        <Tabs value={selectedTab} onChange={handleTabChange} centered 
+          sx={{
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#794f29', // Change the color of the indicator
+            }
+          }}
+        >
+          <Tab label="Nyilvános"
+            sx={{ 
+              color:'#794f29',
+              '&.Mui-selected': {
+                color: '#794f29', // Text color when selected
+              },
+            }}
+          />
+          <Tab label="Privát" 
+            sx={{
+              color:'#794f29',
+              '&.Mui-selected': {
+                color: '#794f29', // Text color when selected
+              },
+            }}
+          />
+        </Tabs>
+  
+        {/* A kiválasztott tab tartalmának megjelenítése */}
+        {selectedTab === 0 && (
+          <Box>
+            {renderTable(publicRooms)}
+          </Box>
+        )}
+        {selectedTab === 1 && (
+          <Box>
+            {renderTable(privateRooms)}
+          </Box>
+        )}
+  
+        {/* Gomb elhelyezése a táblázat alatt */}
+        <Box display="flex" justifyContent="center" sx={{ marginTop: 2 }}>
+          <Button variant="contained" onClick={handleOpenDialog} 
+            sx={{ 
+              backgroundColor: '#eae2ca', 
+              color: '#895737',
+              fontWeight: '600',
+              fontFamily: 'Times New Roman', 
+              borderRadius: '8px',
+              margin: '16px',
+              cursor: 'pointer',
+              border: 'none',
+              padding: '10px 20px',
+              transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+              '&:hover': {
+                backgroundColor: '#90784f', // Change background color on hover
+                color: '#f3e9dc',
+              }
+            }}
+          >
+            Létrehozás
+          </Button>
+        </Box>
+  
+        {/* Létrehozás dialog */}
+        <Dialog open={openDialog} onClose={handleCloseDialog}>
+          <DialogTitle>Létrehozás</DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Szoba neve"
+              fullWidth
+              value={newRoomName}
+              onChange={(e) => setNewRoomName(e.target.value)}
+              sx={{ marginBottom: 2 }}
+            />
+            <FormControl component="fieldset">
+              <FormLabel component="legend">Szoba típusa</FormLabel>
+              <RadioGroup
+                value={isPrivate ? 'private' : 'public'}
+                onChange={(e) => setIsPrivate(e.target.value === 'private')}
+              >
+                <FormControlLabel value="public" control={<Radio />} label="Nyilvános" />
+                <FormControlLabel value="private" control={<Radio />} label="Privát" />
+              </RadioGroup>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog} color="secondary">
+              Mégse
+            </Button>
+            <Button onClick={handleAddRoom} color="primary">
+              Létrehozás
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    );
+  };
 
 export default ChatRooms;

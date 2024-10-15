@@ -6,9 +6,9 @@ class MysqlConnection():
 
     def __init__(self) -> None:
         self.db_connection = connect(
-            host=environ.get("MYSQL_HOST", "mysql"),
-            user=environ.get("MYSQL_ROOT_USER", "rami"),
-            password=environ.get("MYSQL_PASSWORD", "password"),
+            host=environ.get("MYSQL_HOST", "localhost"),
+            user=environ.get("MYSQL_ROOT_USER", "root"),
+            password=environ.get("MYSQL_PASSWORD", "admin"),
             database=environ.get("MYSQL_DATABASE", "olvasosziget"),
             port=int(environ.get("MYSQL_PORT", "3306"))
         )

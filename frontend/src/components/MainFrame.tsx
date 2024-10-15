@@ -1,4 +1,5 @@
 import { styled } from '@mui/material/styles';
+import React, { useEffect } from 'react';
 import Box from '@mui/material/Box';
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
@@ -9,7 +10,8 @@ import Stack from '@mui/material/Stack';
 import { useNavigate } from 'react-router-dom';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined';
-import { ReactNode } from 'react';
+import '../index.css';
+import myImage from '../assets/letöltés.jfif';
 
 const drawerWidth = 240;
 
@@ -18,7 +20,6 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   alignItems: 'center',
   justifyContent: 'flex-end',
   padding: theme.spacing(0, 1),
-  // necessary for content to be below app bar
   ...theme.mixins.toolbar,
 }));
 
@@ -30,6 +31,8 @@ const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== 'open',
 })<AppBarProps>(({ theme, open }) => ({
   zIndex: theme.zIndex.drawer + 1,
+  backgroundColor: '#82855a',
+  color: '#f3e9dc',
   transition: theme.transitions.create(['width', 'margin'], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
@@ -45,40 +48,52 @@ const AppBar = styled(MuiAppBar, {
 }));
 
 type Props = {
-    children: ReactNode
+  children: React.ReactNode;
 }
 
-export default function MainHome({children}: Props) {
+export default function MainHome({ children }: Props) {
   const navigate = useNavigate();
 
+  const handleMainHome = () => {
+    navigate('/mainhome');
+  };
+
   const handleLogIn = () => {
-    navigate('/login')
+    navigate('/login');
   };
 
   const handleRegistration = () => {
-    navigate('/registration')
+    navigate('/registration');
   };
 
+  useEffect(() => {
+    const img = document.querySelector('.image-container img');
+    if (img) img.classList.add('active');
+  }, []);
+
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
       <CssBaseline />
       <AppBar position="fixed" open={false}>
         <Toolbar>
-          <Typography variant="h5" noWrap component="div" sx={{fontFamily: 'monospace'}}>
+          <Typography variant="h5" noWrap component="div" onClick={handleMainHome} sx={{ fontFamily: 'monospace', color: '#f5e6d3', cursor: 'pointer' }}>
             Olvasó Sziget
           </Typography>
-          <Stack position={'relative'} left={890} direction="row">
-            <IconButton>
-                <LoginOutlinedIcon onClick={handleLogIn}>Bejelentkezés</LoginOutlinedIcon>
+          <Stack position={'fixed'} right='30px' direction="row">
+            <IconButton sx={{ color: '#f5e6d3' }}>
+              <LoginOutlinedIcon onClick={handleLogIn}>Bejelentkezés</LoginOutlinedIcon>
             </IconButton>
-            <IconButton>
-                <HowToRegOutlinedIcon onClick={handleRegistration}>Regisztráció</HowToRegOutlinedIcon>
+            <IconButton sx={{ color: '#f5e6d3' }}>
+              <HowToRegOutlinedIcon onClick={handleRegistration}>Regisztráció</HowToRegOutlinedIcon>
             </IconButton>
           </Stack>
         </Toolbar>
       </AppBar>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <DrawerHeader />
+        <div className="image-container">
+          <img src={myImage} alt="Main Image" />
+        </div>
         {children}
       </Box>
     </Box>

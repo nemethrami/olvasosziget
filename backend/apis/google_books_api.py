@@ -7,7 +7,7 @@ router = APIRouter()
 
 @router.get("/books_by_name", response_model=list)
 async def list_books_by_name(book: str):
-    GOOGLE_API_KEY = environ.get("API_KEY", None)
+    GOOGLE_API_KEY = environ.get("API_KEY", "AIzaSyCZ0PamLM1OwHLSQ-qNab8hUhHGjGr0Bjs")
     if not GOOGLE_API_KEY:
         raise HTTPException(status_code=500, detail="Google Books API key is missing")
     

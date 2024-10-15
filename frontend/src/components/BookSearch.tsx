@@ -10,6 +10,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import "./BookSearch.css";
 import InputBase from '@mui/material/InputBase';
 import SearchIcon from '@mui/icons-material/Search';
+import Box from '@mui/material/Box';
 
 function BookSearch() {
 
@@ -51,18 +52,32 @@ function BookSearch() {
 
     return (
         <>
-            <form onSubmit={handleSubmit} className='form'>
-                <InputBase
-                    onChange={handleChange}
-                    sx={{ flex: 1}}
-                    placeholder="Search for books"
-                    inputProps={{ 'aria-label': 'search books' }}
-                    autoComplete='off'
-                />
-                <IconButton type="submit" sx={{ p: '10px' }} aria-label="search">
-                    <SearchIcon />
-                </IconButton>
-            </form>
+         <Box 
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    width: '100%', // 100% szélesség
+                    maxWidth: '280px', // Maximális szélesség
+                    margin: '0 auto', // Középre igazítás
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    padding: '4px',
+                }}
+            >
+                <form onSubmit={handleSubmit} className='form'>
+                    <InputBase
+                        onChange={handleChange}
+                        sx={{ flex: 1}}
+                        placeholder="Keresés"
+                        inputProps={{ 'aria-label': 'search books' }}
+                        autoComplete='off'
+                    />
+                    <IconButton type="submit" sx={{ p: '10px' }} aria-label="search">
+                        <SearchIcon />
+                    </IconButton>
+                </form>
+            </Box>
             <ImageList sx={{ width: '100%', height: 650 }} cols={8}>
                 {result.map((book: BookModel) => (
                     <ImageListItem key={book.volumeInfo.imageLinks?.thumbnail || edition_placeholder}>

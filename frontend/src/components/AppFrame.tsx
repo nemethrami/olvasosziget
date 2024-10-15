@@ -21,6 +21,7 @@ import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined';
 import MarkUnreadChatAltOutlinedIcon from '@mui/icons-material/MarkUnreadChatAltOutlined';
 import EqualizerOutlinedIcon from '@mui/icons-material/EqualizerOutlined';
 import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined';
+import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import Avatar from '@mui/material/Avatar';
 import Stack from '@mui/material/Stack';
 import ExitToAppOutlinedIcon from '@mui/icons-material/ExitToAppOutlined';
@@ -31,6 +32,8 @@ const drawerWidth = 240;
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
+  backgroundColor: '#eae2ca',
+  color: '#895737',
   transition: theme.transitions.create('width', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.enteringScreen,
@@ -43,6 +46,8 @@ const closedMixin = (theme: Theme): CSSObject => ({
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
+  backgroundColor: '#eae2ca',
+  color: '#895737',
   overflowX: 'hidden',
   width: `calc(${theme.spacing(7)} + 1px)`,
   [theme.breakpoints.up('sm')]: {
@@ -67,6 +72,8 @@ const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== 'open',
 })<AppBarProps>(({ theme, open }) => ({
   zIndex: theme.zIndex.drawer + 1,
+  backgroundColor: '#82855a',
+  color: '#f3e9dc',
   transition: theme.transitions.create(['width', 'margin'], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
@@ -82,19 +89,27 @@ const AppBar = styled(MuiAppBar, {
 }));
 
 const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
-  ({ theme, open }) => ({
+  ({ theme }) => ({
     width: drawerWidth,
     flexShrink: 0,
     whiteSpace: 'nowrap',
     boxSizing: 'border-box',
-    ...(open && {
-      ...openedMixin(theme),
-      '& .MuiDrawer-paper': openedMixin(theme),
-    }),
-    ...(!open && {
-      ...closedMixin(theme),
-      '& .MuiDrawer-paper': closedMixin(theme),
-    }),
+    variants: [
+      {
+        props: ({ open }) => open,
+        style: {
+          ...openedMixin(theme),
+          '& .MuiDrawer-paper': openedMixin(theme),
+        },
+      },
+      {
+        props: ({ open }) => !open,
+        style: {
+          ...closedMixin(theme),
+          '& .MuiDrawer-paper': closedMixin(theme),
+        },
+      },
+    ],
   }),
 );
 
@@ -115,12 +130,20 @@ export default function AppFrame({children}: Props) {
     setOpen(false);
   };
 
+  const handleProfile = () => {
+    navigate('/profile')
+  };
+
   const handleLogOut = () => {
     navigate('/mainhome')
   };
 
   const handleHome = () => {
     navigate('/home')
+  };
+
+  const handleProfil = () => {
+    navigate('/profile')
   };
 
   const handleFollow = () => {
@@ -154,26 +177,26 @@ export default function AppFrame({children}: Props) {
               ...(open && { display: 'none' }),
             }}
           >
-            <MenuIcon />
+            <MenuIcon sx={{ color: '#f5e6d3' }}/>
           </IconButton>
-          <Typography variant="h5" noWrap component="div" sx={{fontFamily: 'monospace'}}>
+          <Typography variant="h5" noWrap component="div" onClick={handleHome} sx={{fontFamily: 'monospace', cursor: 'pointer'}}>
             Olvasó Sziget
           </Typography>
-          <Stack position={'relative'} left={890} direction="row">
-            <Avatar>R</Avatar> 
-            <IconButton LinkComponent={Link} color='secondary' onClick={handleLogOut}> <ExitToAppOutlinedIcon></ExitToAppOutlinedIcon></IconButton>
+          <Stack position={'fixed'} right='30px' direction="row" spacing={1}>
+            <Avatar onClick={handleProfile}>R</Avatar> 
+            <IconButton LinkComponent={Link}  onClick={handleLogOut} sx={{color: '#f5e6d3'}}> <ExitToAppOutlinedIcon></ExitToAppOutlinedIcon></IconButton>
           </Stack>
         </Toolbar>
       </AppBar>
       <Drawer variant="permanent" open={open}>
         <DrawerHeader>
-          <IconButton onClick={handleDrawerClose}>
+          <IconButton onClick={handleDrawerClose} sx={{ color: '#895737' }}>
             {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
           </IconButton>
         </DrawerHeader>
         <Divider />
         <List>
-          {['Főoldal', 'Követések', 'Chatszobák', 'Statisztika', 'Célkitűzés'].map((text, index) => (
+          {['Főoldal', 'Profil', 'Követések', 'Chatszobák', 'Statisztika', 'Célkitűzés'].map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: 'block' }}>
               <ListItemButton
                 sx={{
@@ -181,17 +204,18 @@ export default function AppFrame({children}: Props) {
                   justifyContent: open ? 'initial' : 'center',
                   px: 2.5,
                 }}
-                onClick={index % 5 ===0 ? handleHome : index % 5 === 1 ? handleFollow : index % 5 === 2 ? handleChat : index % 5 === 3 ? handleStatistic : handleGoal}
+                onClick={index % 6 ===0 ? handleHome : index % 6 === 1 ? handleProfil : index % 6 === 2 ? handleFollow : index % 6 === 3 ? handleChat : index % 6 === 4 ? handleStatistic : handleGoal}
               >
                 <ListItemIcon
                   sx={{
                     minWidth: 0,
                     mr: open ? 3 : 'auto',
                     justifyContent: 'center',
+                    color: '#895737'
                   }}
                 >
                   {
-                    index % 5 === 0 ? <HomeOutlinedIcon /> : index % 5 === 1 ? <PersonAddAltOutlinedIcon /> : index % 5 === 2 ? <MarkUnreadChatAltOutlinedIcon /> : index % 5 === 3 ? <EqualizerOutlinedIcon /> : <EventAvailableOutlinedIcon />
+                    index % 6 === 0 ? <HomeOutlinedIcon /> : index % 6 === 1 ? <AccountCircleOutlinedIcon /> : index % 6 === 2 ? <PersonAddAltOutlinedIcon /> : index % 6 === 3 ? <MarkUnreadChatAltOutlinedIcon /> : index % 6 === 4 ? <EqualizerOutlinedIcon /> : <EventAvailableOutlinedIcon />
                   }
                   
                 </ListItemIcon>

@@ -6,7 +6,7 @@ interface User {
   username: string;
 }
 
-const FollowPage = () => {
+const FollowComponent = () => {
   // Követők és követések listák
   const followers: User[] = [
     { id: '1', username: 'user1' },
@@ -22,19 +22,50 @@ const FollowPage = () => {
   const [selectedTab, setSelectedTab] = useState<'followers' | 'following'>('followers');
 
   return (
-    <Box sx={{ width: '100%', padding: 2 }}>
+    <Box sx={{ width: '100%', padding: 2, }}>
       {/* Fül navigáció */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', marginBottom: 2, }}>
         <Button
           variant={selectedTab === 'followers' ? 'contained' : 'outlined'}
           onClick={() => setSelectedTab('followers')}
-          sx={{ marginRight: 2 }}
+          sx={{ 
+            backgroundColor: '#eae2ca', 
+            color: '#895737',
+            fontWeight: '600',
+            fontFamily: 'Times New Roman', 
+            borderRadius: '8px',
+            margin: '16px',
+            cursor: 'pointer',
+            border: 'none',
+            padding: '10px 20px',
+            transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+            '&:hover': {
+              backgroundColor: '#90784f', // Change background color on hover
+              color: '#f3e9dc',
+            }
+          }}
         >
           Követők
         </Button>
         <Button
           variant={selectedTab === 'following' ? 'contained' : 'outlined'}
           onClick={() => setSelectedTab('following')}
+          sx={{ 
+            backgroundColor: '#eae2ca', 
+            color: '#895737',
+            fontWeight: '600',
+            fontFamily: 'Times New Roman', 
+            borderRadius: '8px',
+            margin: '16px',
+            cursor: 'pointer',
+            border: 'none',
+            padding: '10px 20px',
+            transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+            '&:hover': {
+              backgroundColor: '#90784f', // Change background color on hover
+              color: '#f3e9dc',
+            }
+          }}
         >
           Követések
         </Button>
@@ -70,4 +101,4 @@ const FollowPage = () => {
   );
 };
 
-export default FollowPage;
+export default FollowComponent;

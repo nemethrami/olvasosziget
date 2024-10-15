@@ -1,5 +1,4 @@
-import FollowPage from '../components/FollowPage';
-import Profile from '../components/Profile';
+import FollowComponent from '../components/FollowComponent';
 import AppFrame from '../components/AppFrame';
 import PeopleSearch from '../components/PeopleSearch';
 
@@ -7,8 +6,7 @@ export default function Follow() {
   return (
       <AppFrame> 
           <PeopleSearch></PeopleSearch>
-          <Profile></Profile>
-          <FollowPage></FollowPage>
+          <FollowComponent></FollowComponent>
       </AppFrame>
   );
 }
