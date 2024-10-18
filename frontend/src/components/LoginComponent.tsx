@@ -10,6 +10,7 @@ import * as React from 'react';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import { useNavigate, Link } from 'react-router-dom';
+import googleSignIn from '../services/FirebaseService';
 
 
 function LoginComponent() {
@@ -27,7 +28,29 @@ function LoginComponent() {
 
     const handleLogIn = () => {
         navigate('/home')
-      };
+    };
+
+    async function singInWithGoogle() {
+        try {
+            const result = await googleSignIn();
+            const email_addr = result.user.email ?? '';
+            const name = result.user.displayName ?? '';
+
+            const userData = {
+                email: email_addr,
+                felhasznalo: email_addr.split('@')[0] ?? '',
+                keresztnev: name.split(' ').slice(0, -1).join(' ') ?? '',
+                vezeteknev: name.split(' ').slice(-1)[0] ?? '',
+                profilkep: result.user.photoURL ?? ''
+            };
+
+            console.log(userData);
+
+            navigate('/home');
+        } catch (error) {
+            console.error(`Error during sign in: ${error}`);
+        }
+    }
 
     return(
         <>
@@ -73,6 +96,7 @@ function LoginComponent() {
                 />
             </FormControl>
             <Button variant="outlined" onClick={handleLogIn}>Bejelentkezés</Button>
+            <Button variant='outlined' onClick={singInWithGoogle}>Google login</Button>
             <p style={{color:'#794f29', marginTop: '12px'}}>Még nincs felhasználói fiókod? <Link to="/registration">Regisztrálj itt</Link></p>
         </Box>
         </>
