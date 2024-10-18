@@ -80,11 +80,13 @@ export default function MainHome({ children }: Props) {
             Olvasó Sziget
           </Typography>
           <Stack position={'fixed'} right='30px' direction="row">
-            <IconButton sx={{ color: '#f5e6d3' }}>
-              <LoginOutlinedIcon onClick={handleLogIn}>Bejelentkezés</LoginOutlinedIcon>
+            <IconButton onClick={handleLogIn} sx={{ color: '#f5e6d3', fontSize:'1em' }}>
+              <LoginOutlinedIcon></LoginOutlinedIcon>
+              Bejelentkezés
             </IconButton>
-            <IconButton sx={{ color: '#f5e6d3' }}>
-              <HowToRegOutlinedIcon onClick={handleRegistration}>Regisztráció</HowToRegOutlinedIcon>
+            <IconButton onClick={handleRegistration} sx={{ color: '#f5e6d3', fontSize:'1em' }}>
+              <HowToRegOutlinedIcon></HowToRegOutlinedIcon>
+              Regisztráció
             </IconButton>
           </Stack>
         </Toolbar>

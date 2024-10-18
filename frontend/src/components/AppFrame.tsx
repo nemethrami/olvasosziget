@@ -183,8 +183,11 @@ export default function AppFrame({children}: Props) {
             Olvasó Sziget
           </Typography>
           <Stack position={'fixed'} right='30px' direction="row" spacing={1}>
-            <Avatar onClick={handleProfile}>R</Avatar> 
-            <IconButton LinkComponent={Link}  onClick={handleLogOut} sx={{color: '#f5e6d3'}}> <ExitToAppOutlinedIcon></ExitToAppOutlinedIcon></IconButton>
+            <Avatar onClick={handleProfile}></Avatar> 
+            <IconButton LinkComponent={Link}  onClick={handleLogOut} sx={{color: '#f5e6d3', fontSize:'1em'}}>
+              <ExitToAppOutlinedIcon> </ExitToAppOutlinedIcon>
+              Kilépés
+            </IconButton>
           </Stack>
         </Toolbar>
       </AppBar>

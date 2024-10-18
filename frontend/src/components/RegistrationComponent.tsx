@@ -21,17 +21,23 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { Dayjs } from 'dayjs';
 import { useNavigate} from 'react-router-dom';
+import { UserCredential } from 'firebase/auth';
+import { Timestamp } from 'firebase/firestore';
+import { addDataToCollection, createUser } from '../services/FirebaseService';
+import { Typography } from '@mui/material';
 
 
 function RegistrationComponent() {
-    const [value, setValue] = React.useState('female');
     const [birthDate, setBirthDate] = useState<Dayjs | null>(null);
     const [showPassword, setShowPassword] = React.useState(false);
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [gender, setGender] = useState<string>('');
+    const [firstName, setFirstName] = useState<string>('');
+    const [lastName, setLastName] = useState<string>('');
+    const [userName, setUserName] = useState<string>('');
+    const [error, setError] = useState<string>('');
     const navigate = useNavigate();
-  
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      setValue((event.target as HTMLInputElement).value);
-    };
 
     const handleClickShowPassword = () => setShowPassword((show) => !show);
 
@@ -43,9 +49,39 @@ function RegistrationComponent() {
         event.preventDefault();
     };
 
-    const handleRegistration = () => {
-        navigate('/login')
-      };
+    const handleRegistration = async () => {
+        setError('');
+        let userCredential: UserCredential | null = null;
+        try {
+            userCredential = await createUser(email, password);
+        }
+        catch (error) {
+            setError(`${error}`);
+        }
+
+        if (!userCredential) return;
+
+        const user = userCredential.user;
+
+        if (user) {
+            const userData = {
+                email: email,
+                username: userName,
+                password: password,
+                firstname: firstName,
+                lastname: lastName,
+                gender: gender,
+                birth_date: Timestamp.fromDate(birthDate ? birthDate.toDate() : new Date()),
+                avatar_url: '',
+            }
+
+            addDataToCollection('users', user.uid, userData);
+            navigate('/login')
+        }
+        else {
+            setError('A regisztráció sikertelen volt!')
+        }
+    };
 
     return (
         <>
@@ -71,48 +107,56 @@ function RegistrationComponent() {
                 <Grid item xs={6}>
                     <TextField
                         required
-                        id="outlined-required"
+                        id="lastname"
                         label="Vezetéknév"
                         sx={{ gridColumn: 'span 1' }}
                         fullWidth
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
                     />
                 </Grid>
 
                 <Grid item xs={6}>
                     <TextField
                         required
-                        id="outlined-required"
+                        id="firstname"
                         label="Keresztnév"
                         sx={{ gridColumn: 'span 1' }}
                         fullWidth
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
                     />
                 </Grid>
 
                 <Grid item xs={6}>
                     <TextField
                         required
-                        id="outlined-required"
+                        id="username"
                         label="Felhasználónév "
                         sx={{ gridColumn: 'span 1' }}
                         fullWidth
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
                     />
                 </Grid>
 
                 <Grid item xs={6}>
                     <TextField
                         required
-                        id="outlined-required"
+                        id="email"
                         label="E-mail cím"
                         sx={{ gridColumn: 'span 1' }}
                         fullWidth
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                     />
                 </Grid>
 
                 <Grid item xs={6}>
                     <FormControl required variant="outlined" fullWidth>
-                        <InputLabel htmlFor="outlined-adornment-password">Jelszó</InputLabel>
+                        <InputLabel htmlFor="password">Jelszó</InputLabel>
                         <OutlinedInput
-                            id="outlined-adornment-password"
+                            id="password"
                             fullWidth
                             type={showPassword ? 'text' : 'password'}
                             endAdornment={
@@ -129,14 +173,16 @@ function RegistrationComponent() {
                             </InputAdornment>
                             }
                             label="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                         />
                     </FormControl>
                 </Grid>
                 <Grid item xs={6}>
                     <FormControl required variant="outlined" fullWidth>
-                        <InputLabel htmlFor="outlined-adornment-password">Jelszó megerősítése</InputLabel>
+                        <InputLabel htmlFor="passwordagain">Jelszó megerősítése</InputLabel>
                         <OutlinedInput
-                            id="outlined-adornment-password"
+                            id="passwordagain"
                             fullWidth
                             type={showPassword ? 'text' : 'password'}
                             endAdornment={
@@ -153,17 +199,19 @@ function RegistrationComponent() {
                             </InputAdornment>
                             }
                             label="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                         />
                     </FormControl>
                 </Grid>
                 <Grid item xs={6}>
                 <FormControl required variant="outlined">
-                    <FormLabel id="demo-controlled-radio-buttons-group">Nem</FormLabel>
+                    <FormLabel id="radio-buttons-group">Nem</FormLabel>
                     <RadioGroup
-                        aria-labelledby="demo-controlled-radio-buttons-group"
+                        aria-labelledby="radio-buttons-group"
                         name="controlled-radio-buttons-group"
-                        value={value}
-                        onChange={handleChange}
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
                     >
                         <FormControlLabel value="female" control={<Radio />} label="Nő" />
                         <FormControlLabel value="male" control={<Radio />} label="Férfi" />
@@ -185,7 +233,9 @@ function RegistrationComponent() {
                 <Button variant="outlined" onClick={handleRegistration}>Regisztráció</Button>   
                 </Grid>
             </Grid>
-           
+            {error && (
+                <Typography> {error} </Typography>
+            )}
         </Box>
         </>
     )
