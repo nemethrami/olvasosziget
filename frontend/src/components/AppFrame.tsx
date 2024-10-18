@@ -22,11 +22,12 @@ import MarkUnreadChatAltOutlinedIcon from '@mui/icons-material/MarkUnreadChatAlt
 import EqualizerOutlinedIcon from '@mui/icons-material/EqualizerOutlined';
 import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
-import Avatar from '@mui/material/Avatar';
 import Stack from '@mui/material/Stack';
 import ExitToAppOutlinedIcon from '@mui/icons-material/ExitToAppOutlined';
 import { useNavigate, Link } from 'react-router-dom';
 import { ReactNode } from 'react';
+import { handleSignOut } from '../services/FirebaseService';
+import AvatarComponent from './AvatarComponent';
 
 const drawerWidth = 240;
 
@@ -130,11 +131,8 @@ export default function AppFrame({children}: Props) {
     setOpen(false);
   };
 
-  const handleProfile = () => {
-    navigate('/profile')
-  };
-
   const handleLogOut = () => {
+    handleSignOut();
     navigate('/mainhome')
   };
 
@@ -183,7 +181,7 @@ export default function AppFrame({children}: Props) {
             Olvasó Sziget
           </Typography>
           <Stack position={'fixed'} right='30px' direction="row" spacing={1}>
-            <Avatar onClick={handleProfile}></Avatar> 
+            <AvatarComponent />
             <IconButton LinkComponent={Link}  onClick={handleLogOut} sx={{color: '#f5e6d3', fontSize:'1em'}}>
               <ExitToAppOutlinedIcon> </ExitToAppOutlinedIcon>
               Kilépés
