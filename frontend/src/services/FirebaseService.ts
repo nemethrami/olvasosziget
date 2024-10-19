@@ -1,6 +1,7 @@
-import { addDoc, collection, CollectionReference, deleteDoc, doc, DocumentData, DocumentReference, DocumentSnapshot, getDoc, setDoc } from "firebase/firestore";
-import { auth, googleProvider, db } from "../config/FirebaseConfig";
+import { addDoc, collection, CollectionReference, deleteDoc, doc, DocumentData, DocumentReference, DocumentSnapshot, getDoc, getDocs, setDoc } from "firebase/firestore";
+import { auth, googleProvider, db, storage } from "../config/FirebaseConfig";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { ref } from "firebase/storage";
 
 export async function googleSignIn() {
     return await signInWithPopup(auth, googleProvider);
@@ -69,4 +70,16 @@ export async function getDocData (collection_name: string, id: string) {
 export async function addDataToCollectionWithAutoID (collection_name: string, data: Record<string, unknown>) {
     const collectionRef: CollectionReference<DocumentData, DocumentData> = collection(db, collection_name);
     await addDoc(collectionRef, data);
+}
+
+export function getStorageRef (url: string) {
+    return ref(storage, url);
+}
+
+export function getDocRef (collectionName: string, docID: string) {
+    return doc(db, collectionName, docID);
+}
+
+export async function getCollectionDataByID (collection_name: string) {
+    return await getDocs(collection(db, collection_name));
 }

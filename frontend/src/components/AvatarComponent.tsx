@@ -4,9 +4,14 @@ import { getCurrentUser, getDocData } from "../services/FirebaseService";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../config/FirebaseConfig";
 
+type Props = {
+    onClick ?: () => void,
+    aUrl ?: string,
+    sx ?: Record<string,unknown>,
 
+}
 
-export default function AvatarComponent() {
+export default function AvatarComponent({ onClick, aUrl, sx }: Props) {
     const [avatarUrl, setAvatarUrl] = useState<string>('');
 
     const getAvatarUrl = async () => {
@@ -41,5 +46,11 @@ export default function AvatarComponent() {
         return () => unsubscribe();
     }, []);
 
-    return <Avatar alt='User avatar' src={localStorage.getItem('avatarUrl') ? localStorage.getItem('avatarUrl') || avatarUrl : avatarUrl}></Avatar>
+    return <Avatar 
+                alt='User avatar' 
+                src={aUrl || aUrl === '' ? aUrl : localStorage.getItem('avatarUrl') || avatarUrl}
+                sx={sx}
+                onClick={onClick}
+            >
+            </Avatar>
 }

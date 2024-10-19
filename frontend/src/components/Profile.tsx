@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
-import { Avatar, Box, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, Grid, TextField } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, Grid, TextField } from '@mui/material';
 import FollowComponent from './FollowComponent';
+import { getCurrentUserName, getStorageRef, getDocRef } from '../services/FirebaseService';
+import { getDownloadURL, uploadBytes } from 'firebase/storage';
+import { updateDoc } from 'firebase/firestore';
+import AvatarComponent from './AvatarComponent';
 
 // Dummy data for recommendations
 const mockRecommendations = [
@@ -9,28 +13,63 @@ const mockRecommendations = [
 ];
 
 const UserProfile: React.FC = () => {
-  const [image, setImage] = useState<string | ArrayBuffer | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [targetDate, setTargetDate] = useState('');
   const [bookGoal, setBookGoal] = useState(0);
   const [booksRead, setBooksRead] = useState(0);
+  const [username, setUserName] = useState('username');
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      const userName: string = await getCurrentUserName();
+      setUserName(userName);
+    }
+
+    fetchUserName();
+  }, []);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files![0];
-    setSelectedImage(file);
+    if (event.target.files && event.target.files[0]) {
+      setSelectedImage(event.target.files[0]);
+    }
   };
 
-  const handleSaveImage = () => {
-    if (selectedImage) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result);
-      };
-      reader.readAsDataURL(selectedImage);
+  const handleSaveImage = async () => {
+    if (!selectedImage) {
+      setDialogOpen(false);
+      setSelectedImage(null);
+      return;
     }
-    setDialogOpen(false);
-  };
+    
+    const userId = localStorage.getItem('uid');
+    if (!userId) {
+      setDialogOpen(false);
+      setSelectedImage(null);
+      return;
+    }
+
+    const storageRef = getStorageRef(`profilePictures/${userId}.jpg`);
+
+    try {
+        // Upload file to Firebase Storage
+        await uploadBytes(storageRef, selectedImage);
+        // Get the download URL
+        const downloadURL = await getDownloadURL(storageRef);
+    
+        // Save the URL to Firestore
+        await updateDoc(getDocRef('users', userId), {
+            avatar_url: downloadURL,
+        });
+
+        alert('Profile picture uploaded successfully!');
+    } catch (error) {
+        console.error('Error uploading profile picture:', error);
+    } finally {
+        setSelectedImage(null);
+        setDialogOpen(false);
+    }
+  }
 
   const handleDialogOpen = () => {
     setDialogOpen(true);
@@ -48,9 +87,8 @@ const UserProfile: React.FC = () => {
         <Grid item xs={12} md={4}>
           <Paper sx={{ padding: 2, backgroundColor: '#f6f5ec', border: 'none', boxShadow: 'none' }}>
             {/* Profilkép */}
-            <Typography variant="h6" align="center">Profil</Typography>
-            <Avatar 
-              src={typeof image === 'string' ? image : undefined} 
+            <Typography variant="h6" align="center">@{username}</Typography>
+            <AvatarComponent
               sx={{ width: 80, height: 80, margin: '13px auto', cursor: 'pointer' }} 
               onClick={handleDialogOpen}
             />
@@ -69,16 +107,6 @@ const UserProfile: React.FC = () => {
                 <label htmlFor="upload-button">
                   <Button component="span">Feltöltés</Button>
                 </label>
-                <Button 
-                  onClick={() => { 
-                    if (typeof image === 'string') {
-                      window.open(image, '_blank');
-                    }
-                  }}
-                  disabled={!image}
-                >
-                  Nagyobb nézet
-                </Button>
                 <Button 
                   onClick={handleSaveImage} 
                   disabled={!selectedImage}
