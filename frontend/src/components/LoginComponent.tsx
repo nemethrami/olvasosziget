@@ -10,7 +10,7 @@ import * as React from 'react';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import { useNavigate, Link } from 'react-router-dom';
-import { addDataToCollection, defaultSignIn, googleSignIn } from '../services/FirebaseService';
+import { addDataToCollection, defaultSignIn, getDocData, googleSignIn } from '../services/FirebaseService';
 
 
 function LoginComponent() {
@@ -44,6 +44,13 @@ function LoginComponent() {
         setErrorMsg('');
         try {
             const result = await googleSignIn();
+            const docData = await getDocData('users', result.user.uid);
+
+            if (docData) {
+                navigate("/home");
+                return;
+            }
+
             const email_addr = result.user.email ?? ''
             const name = result.user.displayName ?? ''
             
@@ -53,6 +60,8 @@ function LoginComponent() {
                 firstname: name.split(' ').slice(0, -1).join(' ') ?? '',
                 lastname: name.split(' ').slice(-1)[0] ?? '',
                 avatar_url: result.user.photoURL ?? '',
+                followers: [],
+                following: [],
             }
             
             await addDataToCollection('users', result.user.uid, userData);

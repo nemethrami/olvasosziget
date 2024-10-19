@@ -1,25 +1,71 @@
 import { Box, Button, Typography, List, ListItem, ListItemText } from '@mui/material';
-import { useState } from 'react';
-
-interface User {
-  id: string;
-  username: string;
-}
+import { DocumentData } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { getDocData } from '../services/FirebaseService';
+import AvatarComponent from './AvatarComponent';
 
 const FollowComponent = () => {
-  // Követők és követések listák
-  const followers: User[] = [
-    { id: '1', username: 'user1' },
-    { id: '2', username: 'user2' },
-    { id: '3', username: 'user3' },
-  ];
-
-  const following: User[] = [
-    { id: '4', username: 'user4' },
-    { id: '5', username: 'user5' },
-  ];
-
   const [selectedTab, setSelectedTab] = useState<'followers' | 'following'>('followers');
+  const [followers, setFollowers] = useState<DocumentData[]>([]);
+  const [following, setFollowing] = useState<DocumentData[]>([]);
+  const [followerIds, setFollowerIds] = useState<string[]>([]);
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
+  
+  useEffect(() => {
+    async function fetchFollowIds() {
+      const uid = localStorage.getItem('uid');
+      if (!uid) return;
+
+      const userDocData = await getDocData('users', uid);
+
+      if (userDocData) {
+        setFollowerIds(userDocData.followers || []);
+        setFollowingIds(userDocData.following || []);
+      }
+    }
+
+    fetchFollowIds();
+  }, []); // Runs once on component mount
+
+  // Fetch follower data when followerIds state changes
+  useEffect(() => {
+    async function fetchFollowData() {
+      if (followerIds.length === 0) {
+        setFollowers([]);
+        return;
+      }
+
+      const followersPromises = followerIds.map(async (uid: string) => {
+        return await getDocData('users', uid);
+      });
+
+      const followersResult: (DocumentData | null)[] = await Promise.all(followersPromises);
+      const filteredResult: DocumentData[] = followersResult.filter((user): user is DocumentData => user !== null)
+      setFollowers(filteredResult);
+    }
+
+    fetchFollowData();
+  }, [followerIds]); // Runs whenever followerIds changes
+
+  // Fetch following data when followingIds state changes
+  useEffect(() => {
+    async function fetchFollowData() {
+      if (followingIds.length === 0) {
+        setFollowing([]);
+        return;
+      }
+
+      const followingPromises = followingIds.map(async (uid: string) => {
+        return await getDocData('users', uid);
+      });
+
+      const followingResult: (DocumentData | null)[] = await Promise.all(followingPromises);
+      const filteredResult: DocumentData[] = followingResult.filter((user): user is DocumentData => user !== null)
+      setFollowing(filteredResult);
+    }
+
+    fetchFollowData();
+  }, [followingIds]); // Runs whenever followingIds changes
 
   return (
     <Box sx={{ width: '100%', padding: 2, }}>
@@ -76,9 +122,10 @@ const FollowComponent = () => {
         <Box sx={{ marginTop: 2 }}>
           <Typography variant="h6"></Typography>
           <List>
-            {followers.map((follower) => (
-              <ListItem key={follower.id}>
-                <ListItemText primary={follower.username} />
+            {followers.map((follower: DocumentData) => (
+              <ListItem key={follower.username}>
+                <AvatarComponent aUrl={follower.avatar_url}></AvatarComponent>
+                <ListItemText primary={`${follower.lastname} ${follower.firstname}`} sx={{ marginLeft: 1, color: '#895737' }} />
               </ListItem>
             ))}
           </List>
@@ -89,9 +136,10 @@ const FollowComponent = () => {
         <Box sx={{ marginTop: 2 }}>
           <Typography variant="h6"></Typography>
           <List>
-            {following.map((user) => (
-              <ListItem key={user.id}>
-                <ListItemText primary={user.username} />
+            {following.map((user: DocumentData) => (
+              <ListItem key={user.username}>
+                <AvatarComponent aUrl={user.avatar_url}></AvatarComponent>
+                <ListItemText primary={`${user.lastname} ${user.firstname}`} sx={{ marginLeft: 1, color: '#895737' }} />
               </ListItem>
             ))}
           </List>

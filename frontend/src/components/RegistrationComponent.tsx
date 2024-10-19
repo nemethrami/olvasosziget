@@ -73,9 +73,11 @@ function RegistrationComponent() {
                 gender: gender,
                 birth_date: Timestamp.fromDate(birthDate ? birthDate.toDate() : new Date()),
                 avatar_url: '',
+                followers: [],
+                following: [],
             }
 
-            addDataToCollection('users', user.uid, userData);
+            await addDataToCollection('users', user.uid, userData);
             navigate('/login')
         }
         else {

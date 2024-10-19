@@ -5,6 +5,7 @@ import { getCurrentUserName, addDataToCollectionWithAutoID, getCollectionByID } 
 import dayjs from 'dayjs';
 import { DocumentData, onSnapshot } from 'firebase/firestore';
 import { MessageModel } from '../models/MessageModel';
+import { generateRandomId } from '../services/RandomService';
 
 function ChatRoom() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -13,15 +14,6 @@ function ChatRoom() {
   const [messages, setMessages] = useState<DocumentData[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
   const [currentUserName, setCurrentUserName] = useState<string>('');
-
-  const generateRandomId = (length = 10) => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  };
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
