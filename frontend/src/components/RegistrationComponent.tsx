@@ -32,6 +32,7 @@ function RegistrationComponent() {
     const [showPassword, setShowPassword] = React.useState(false);
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
+    const [passwordAgain, setPasswordAgain] = useState<string>('');
     const [gender, setGender] = useState<string>('');
     const [firstName, setFirstName] = useState<string>('');
     const [lastName, setLastName] = useState<string>('');
@@ -51,6 +52,12 @@ function RegistrationComponent() {
 
     const handleRegistration = async () => {
         setError('');
+
+        if (password !== passwordAgain) {
+            setError('A megadott két jelszó nem egyezik!');
+            return;
+        }
+
         let userCredential: UserCredential | null = null;
         try {
             userCredential = await createUser(email, password);
@@ -201,8 +208,8 @@ function RegistrationComponent() {
                             </InputAdornment>
                             }
                             label="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            value={passwordAgain}
+                            onChange={(e) => setPasswordAgain(e.target.value)}
                         />
                     </FormControl>
                 </Grid>
@@ -214,9 +221,10 @@ function RegistrationComponent() {
                         name="controlled-radio-buttons-group"
                         value={gender}
                         onChange={(e) => setGender(e.target.value)}
+                        sx={{ flexDirection: 'row' }}
                     >
-                        <FormControlLabel value="female" control={<Radio />} label="Nő" />
-                        <FormControlLabel value="male" control={<Radio />} label="Férfi" />
+                        <FormControlLabel value="female" control={<Radio />} sx={{color:'#895737'}} label="Nő" />
+                        <FormControlLabel value="male" control={<Radio />} sx={{color:'#895737', marginLeft:'10px'}} label="Férfi" />
                     </RadioGroup>
                 </FormControl>
                 </Grid>
@@ -231,13 +239,36 @@ function RegistrationComponent() {
                         </DemoContainer>
                     </LocalizationProvider>
                 </Grid>
-                <Grid item xs={6}>
-                <Button variant="outlined" onClick={handleRegistration}>Regisztráció</Button>   
+                <Grid item xs={12}>
+                    <Button 
+                        variant="outlined" 
+                        onClick={handleRegistration} 
+                        sx={{
+                            display: 'block', // A gomb blokk szintű elem lesz
+                            margin: '0 auto', // Középre igazítja vízszintesen
+                            backgroundColor: '#eae2ca',
+                            color: '#895737',
+                            fontWeight: '600',
+                            fontFamily: 'Times New Roman', 
+                            borderRadius: '6px',
+                            marginTop: '16px', // Felső margó
+                            cursor: 'pointer',
+                            border: 'none',
+                            padding: '10px 20px',
+                            transition: 'background-color 0.8s ease',
+                            '&:hover': {
+                                backgroundColor: '#90784f',
+                                color: '#f3e9dc',
+                            }
+                        }}
+                    >
+                        Regisztráció
+                    </Button>  
                 </Grid>
             </Grid>
             {error && (
-                <Typography> {error} </Typography>
-            )}
+                <Typography sx={{color:'red', marginTop:'8px'}}> {error} </Typography>
+            )} 
         </Box>
         </>
     )
