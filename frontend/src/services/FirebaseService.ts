@@ -4,6 +4,10 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithP
 import { ref } from "firebase/storage";
 
 export async function googleSignIn() {
+    googleProvider.setCustomParameters({
+        prompt: 'select_account'
+    });
+    
     return await signInWithPopup(auth, googleProvider);
 }
 

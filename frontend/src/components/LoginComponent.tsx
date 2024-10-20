@@ -11,6 +11,9 @@ import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import { useNavigate, Link } from 'react-router-dom';
 import { addDataToCollection, defaultSignIn, getDocData, googleSignIn } from '../services/FirebaseService';
+import { Grid, Typography } from '@mui/material';
+import googleLogo from '../assets/Google__G__logo.svg.png';
+
 
 
 function LoginComponent() {
@@ -118,10 +121,60 @@ function LoginComponent() {
                     onChange={(e) => setPassword(e.target.value)}
                 />
             </FormControl>
-            <Button variant="outlined" onClick={signInWithEmailPw}>Bejelentkezés</Button>
-            <Button variant='outlined' onClick={signInWithGoogle}>Google login</Button>
+            <Button variant="outlined" onClick={signInWithEmailPw}
+               sx={{ 
+                    backgroundColor: '#eae2ca', 
+                    color: '#895737',
+                    fontWeight: '600',
+                    width:'22%',
+                    fontFamily: 'Times New Roman', 
+                    borderRadius: '6px',
+                    margin: '8px',
+                    cursor: 'pointer',
+                    border: 'none',
+                    padding: '10px 20px',
+                    transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                    '&:hover': {
+                        backgroundColor: '#90784f', // Change background color on hover
+                        color: '#f3e9dc',
+                    }
+                    }}
+            >
+                Bejelentkezés
+            </Button>
             <p style={{color:'#794f29', marginTop: '12px'}}>Még nincs felhasználói fiókod? <Link to="/registration">Regisztrálj itt</Link></p>
             {errorMsg && <p style={{ color: 'red' }}>{errorMsg}</p>}
+            <Grid item xs={12} sx={{ textAlign: 'center', width: '24%', marginTop: '16px' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <Box sx={{ flexGrow: 1, height: '1px', backgroundColor: '#ccc' }} />
+                    <Typography sx={{ padding: '0 10px', color: '#999', fontSize:'12px' }}>VAGY</Typography>
+                    <Box sx={{ flexGrow: 1, height: '1px', backgroundColor: '#ccc' }} />
+                </Box>
+            </Grid>
+            <Button variant='outlined' onClick={signInWithGoogle}
+                sx={{ 
+                    backgroundColor: '#eae2ca', 
+                    color: '#895737',
+                    fontWeight: '600',
+                    width:'22%',
+                    fontFamily: 'Times New Roman', 
+                    borderRadius: '6px',
+                    margin:'8px',
+                    cursor: 'pointer',
+                    border: 'none',
+                    padding: '10px 20px',
+                    transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                    }}
+                startIcon={
+                    <img 
+                        src={googleLogo} 
+                        alt="Google logo" 
+                        style={{ width: '20px', height: '20px' }} 
+                    />
+                }
+            >
+                Folytatás a Google-lal
+            </Button>
         </Box>
         </>
     )
