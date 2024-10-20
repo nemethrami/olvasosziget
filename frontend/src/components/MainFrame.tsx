@@ -11,7 +11,6 @@ import { useNavigate } from 'react-router-dom';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined';
 import '../index.css';
-import myImage from '../assets/letöltés.jfif';
 
 const drawerWidth = 240;
 
@@ -93,9 +92,6 @@ export default function MainHome({ children }: Props) {
       </AppBar>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <DrawerHeader />
-        <div className="image-container">
-          <img src={myImage} alt="Main Image" />
-        </div>
         {children}
       </Box>
     </Box>
