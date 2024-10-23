@@ -26,7 +26,7 @@ import Stack from '@mui/material/Stack';
 import ExitToAppOutlinedIcon from '@mui/icons-material/ExitToAppOutlined';
 import { useNavigate, Link } from 'react-router-dom';
 import { ReactNode } from 'react';
-import { handleSignOut } from '../services/FirebaseService';
+import { getCurrentUserName, handleSignOut } from '../services/FirebaseService';
 import AvatarComponent from './AvatarComponent';
 
 const drawerWidth = 240;
@@ -122,6 +122,17 @@ export default function AppFrame({children}: Props) {
   const navigate = useNavigate();
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
+  const [currentUserName, setCurrentUserName] = React.useState<string>('');
+
+  React.useEffect(() => {
+    const fetchUserName = async () => {
+      const userName: string = await getCurrentUserName()
+      //const userName: string = await Promise.resolve('test_user_name');
+      setCurrentUserName(userName);
+    }
+
+    fetchUserName();
+  }, []);
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -141,7 +152,7 @@ export default function AppFrame({children}: Props) {
   };
 
   const handleProfil = () => {
-    navigate('/profile')
+    navigate(`/profile/${currentUserName}`)
   };
 
   const handleFollow = () => {
