@@ -1,4 +1,4 @@
-import { addDoc, collection, CollectionReference, deleteDoc, doc, DocumentData, DocumentReference, DocumentSnapshot, getDoc, getDocs, setDoc } from "firebase/firestore";
+import { addDoc, arrayRemove, arrayUnion, collection, CollectionReference, deleteDoc, doc, DocumentData, DocumentReference, DocumentSnapshot, getDoc, getDocs, Query, QuerySnapshot, setDoc, updateDoc } from "firebase/firestore";
 import { auth, googleProvider, db, storage } from "../config/FirebaseConfig";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { ref } from "firebase/storage";
@@ -86,4 +86,43 @@ export function getDocRef (collectionName: string, docID: string) {
 
 export async function getCollectionDataByID (collection_name: string) {
     return await getDocs(collection(db, collection_name));
+}
+
+export async function userFollow(uid: string) {
+    const currentUserId: string | null = localStorage.getItem('uid');
+
+    if (!currentUserId) return;
+
+    await updateDoc(getDocRef('users', uid), {
+        followers: arrayUnion(currentUserId),
+    });
+
+    await updateDoc(getDocRef('users', currentUserId), {
+        following: arrayUnion(uid),
+    });
+}
+
+export async function userUnFollow(uid: string) {
+    const currentUserId: string | null = localStorage.getItem('uid');
+
+    if (!currentUserId) return;
+
+    await updateDoc(getDocRef('users', uid), {
+      followers: arrayRemove(currentUserId),
+    });
+
+    await updateDoc(getDocRef('users', currentUserId), {
+      following: arrayRemove(uid),
+    });
+}
+
+export async function getAvatarUrlByUserName(userName: string) {
+    const collectionData: QuerySnapshot<DocumentData, DocumentData> = await getCollectionDataByID('users');
+    const userData = collectionData.docs.filter((doc) => doc.data().username === userName);
+    return userData[0].data().avatar_url;
+}
+
+export async function getDocsByQuery(query: Query<DocumentData, DocumentData>) {
+    const docSnap: QuerySnapshot<DocumentData, DocumentData> = await getDocs(query);
+    return !docSnap.empty ? docSnap.docs : null;
 }

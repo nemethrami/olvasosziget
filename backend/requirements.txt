@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-python-jose
-pydantic
-motor
-starlette
-mysql-connector-python
-httpx

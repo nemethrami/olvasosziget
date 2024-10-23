@@ -57,8 +57,16 @@ const ChatRooms = () => {
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [loads, setLoading] = useState<boolean>(true);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchUserData = async () => {
+      const username: string = await getCurrentUserName();
+      setCurrentUserName(username);
+    };
+  
+    fetchUserData();
+
     // Set up the real-time listener
     const unsubscribe = onSnapshot(collection(db, 'chatrooms'), (querySnapshot) => {
       const rooms: DocumentData[] = querySnapshot.docs.map((doc: DocumentData) => doc.data());
@@ -87,17 +95,16 @@ const ChatRooms = () => {
   // Szoba csatlakozási logika
   const handleAddRoom = async (event: React.SyntheticEvent) => {
     event.preventDefault();
-    const username: string = await getCurrentUserName();
 
     const newRoom: ChatRoom = {
       name: newRoomName,
-      creator: username,
+      creator: currentUserName,
       created_at: new Date(),
       is_private: isPrivate,
       password: password,
     };
 
-    addDataToCollection('chatrooms', newRoomName, newRoom);
+    await addDataToCollection('chatrooms', newRoomName, newRoom);
     handleCloseDialog(event);
     setPassword('');
   };
@@ -185,7 +192,7 @@ const ChatRooms = () => {
                   </IconButton>
                 </TableCell>
                 <TableCell>
-                  <IconButton aria-label="connect" onClick={(e) => handleDeleteChatRoom(e, room)}>
+                  <IconButton aria-label="delete" onClick={(e) => handleDeleteChatRoom(e, room)} disabled={currentUserName !== room.creator}>
                     <DeleteForeverIcon />
                   </IconButton>
                 </TableCell>

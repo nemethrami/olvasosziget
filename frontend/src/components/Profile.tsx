@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, Grid, TextField } from '@mui/material';
-import FollowComponent from './FollowComponent';
-import { getCurrentUserName, getStorageRef, getDocRef } from '../services/FirebaseService';
+import { Box, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, Grid } from '@mui/material';
+import { getStorageRef, getDocRef, getAvatarUrlByUserName } from '../services/FirebaseService';
 import { getDownloadURL, uploadBytes } from 'firebase/storage';
 import { updateDoc } from 'firebase/firestore';
 import AvatarComponent from './AvatarComponent';
+import { useParams } from 'react-router-dom';
 
 // Dummy data for recommendations
 const mockRecommendations = [
@@ -13,21 +13,21 @@ const mockRecommendations = [
 ];
 
 const UserProfile: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [targetDate, setTargetDate] = useState('');
-  const [bookGoal, setBookGoal] = useState(0);
-  const [booksRead, setBooksRead] = useState(0);
-  const [username, setUserName] = useState('username');
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
 
   useEffect(() => {
-    const fetchUserName = async () => {
-      const userName: string = await getCurrentUserName();
-      setUserName(userName);
+    const fetchAvatarUrl = async () => {
+      if (!id) return;
+
+      const aUrl: string = await getAvatarUrlByUserName(id);
+      setAvatarUrl(aUrl);
     }
 
-    fetchUserName();
-  }, []);
+    fetchAvatarUrl();
+  }, [id]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -81,16 +81,17 @@ const UserProfile: React.FC = () => {
   };
 
   return (
-    <Box sx={{ padding: 2, display: 'flex', justifyContent: 'flex-start' }}>
+    <Box sx={{ padding: 2 }}>
       <Grid container spacing={2}>
-        {/* Bal oldali rész: Profil információk és statisztikák */}
+        {/* Bal oldali rész: Profil információk és követések */}
         <Grid item xs={12} md={4}>
           <Paper sx={{ padding: 2, backgroundColor: '#f6f5ec', border: 'none', boxShadow: 'none' }}>
             {/* Profilkép */}
-            <Typography variant="h6" align="center">@{username}</Typography>
+            <Typography variant="h6" align="center">@{id}</Typography>
             <AvatarComponent
               sx={{ width: 80, height: 80, margin: '13px auto', cursor: 'pointer' }} 
               onClick={handleDialogOpen}
+              aUrl={avatarUrl}
             />
             
             {/* Dialog a képfeltöltéshez */}
@@ -116,47 +117,9 @@ const UserProfile: React.FC = () => {
                 <Button onClick={handleDialogClose}>Mégse</Button>
               </DialogActions>
             </Dialog>
-
-            {/* Statisztikák */}
-            <Box sx={{ marginTop: 2, textAlign: 'center' }}>
-              <Typography variant="body1"> <FollowComponent /></Typography>
-            </Box>
           </Paper>
         </Grid>
-
-        {/* Jobb oldali rész: Olvasási célok és könyvajánlók */}
         <Grid item xs={12} md={7}>
-          {/* Olvasási cél */}
-          <Paper sx={{ padding: 2, marginBottom: 2, backgroundColor: '#f6f5ec', border: 'none', boxShadow: 'none' }}>
-            <Typography variant="h6">Olvasási cél</Typography>
-            <TextField
-              label="Cél dátuma"
-              type="date"
-              value={targetDate}
-              onChange={(e) => setTargetDate(e.target.value)}
-              fullWidth
-              sx={{ marginBottom: '10px' }}
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="Könyvek száma"
-              type="number"
-              value={bookGoal}
-              onChange={(e) => setBookGoal(Number(e.target.value))}
-              fullWidth
-              sx={{ marginBottom: '10px' }}
-            />
-            <TextField
-              label="Elolvasott könyvek"
-              type="number"
-              value={booksRead}
-              onChange={(e) => setBooksRead(Number(e.target.value))}
-              fullWidth
-              sx={{ marginBottom: '10px' }}
-            />
-          </Paper>
-
-          {/* Könyvajánlók */}
           <Paper sx={{ padding: 2, backgroundColor: '#f6f5ec', border: 'none', boxShadow: 'none' }}>
             <Typography variant="h6">Könyvajánlók</Typography>
             <Grid container spacing={2}>

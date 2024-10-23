@@ -58,6 +58,7 @@ function LoginComponent() {
             const name = result.user.displayName ?? ''
             
             const userData = {
+                uid: result.user.uid,
                 email: email_addr,
                 username: email_addr.split('@')[0] ?? '',
                 firstname: name.split(' ').slice(0, -1).join(' ') ?? '',

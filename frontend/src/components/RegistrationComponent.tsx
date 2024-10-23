@@ -72,6 +72,7 @@ function RegistrationComponent() {
 
         if (user) {
             const userData = {
+                uid: user.uid,
                 email: email,
                 username: userName,
                 password: password,

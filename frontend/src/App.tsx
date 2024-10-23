@@ -5,8 +5,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Registration from "./pages/Registration";
 import MainHome from "./pages/MainHome";
-import UserProfile from "./pages/Profile";
-import Follow from "./pages/Follow";
+import FollowPage from "./pages/FollowPage";
 import ChatRoomsPage from "./pages/ChatroomsPage";
 import Statistics from "./pages/Statistic";
 import Goal from "./pages/Goal";
@@ -16,6 +15,7 @@ import './index.css';
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./config/FirebaseConfig";
 import { useAuthState } from "react-firebase-hooks/auth";
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
   const [user] = useAuthState(auth);
@@ -56,12 +56,12 @@ function App() {
         <Route path="/home" element={user ? <Home /> : <Navigate to="/mainhome" replace />} />
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/home" replace />} />
         <Route path="/registration" element={!user ? <Registration /> : <Navigate to="/home" replace />} />
-        <Route path="/profile" element={user ? <UserProfile /> : <Navigate to="/mainhome" replace />} />
-        <Route path="/follow" element={user ? <Follow /> : <Navigate to="/mainhome" replace />} />
+        <Route path="/follow" element={user ? <FollowPage /> : <Navigate to="/mainhome" replace />} />
         <Route path="/chatrooms" element={user ? <ChatRoomsPage /> : <Navigate to="/mainhome" replace />} />
         <Route path="/statistics" element={user ? <Statistics /> : <Navigate to="/mainhome" replace />} />
         <Route path="/goal" element={user ? <Goal /> : <Navigate to="/mainhome" replace />} />
         <Route path="/chatrooms/:id" element={user ? <ChatRoomPage /> : <Navigate to="/mainhome" replace />} />
+        <Route path="/profile/:id" element={user ? <ProfilePage /> : <Navigate to="/mainhome" replace />} />
       </Routes>
     </BrowserRouter>
   </div>;
