@@ -17,7 +17,8 @@ function BookSearch() {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const linkRef = useRef<HTMLAnchorElement>(null);
-    const API_KEY = process.env.REACT_APP_GOOGLE_BOOKS_API_KEY;
+    const API_KEY = 'AIzaSyCZ0PamLM1OwHLSQ-qNab8hUhHGjGr0Bjs';
+    //const API_KEY = process.env.REACT_APP_GOOGLE_BOOKS_API_KEY;
 
     const fetchBooks = async (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();

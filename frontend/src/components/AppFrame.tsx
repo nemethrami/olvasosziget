@@ -22,9 +22,8 @@ import MarkUnreadChatAltOutlinedIcon from '@mui/icons-material/MarkUnreadChatAlt
 import EqualizerOutlinedIcon from '@mui/icons-material/EqualizerOutlined';
 import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
-import Stack from '@mui/material/Stack';
 import ExitToAppOutlinedIcon from '@mui/icons-material/ExitToAppOutlined';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ReactNode } from 'react';
 import { getCurrentUserName, handleSignOut } from '../services/FirebaseService';
 import AvatarComponent from './AvatarComponent';
@@ -59,7 +58,7 @@ const closedMixin = (theme: Theme): CSSObject => ({
 const DrawerHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'flex-end',
+  justifyContent: 'flex-start',
   padding: theme.spacing(0, 1),
   // necessary for content to be below app bar
   ...theme.mixins.toolbar,
@@ -191,22 +190,19 @@ export default function AppFrame({children}: Props) {
           <Typography variant="h5" noWrap component="div" onClick={handleHome} sx={{fontFamily: 'monospace', cursor: 'pointer'}}>
             Olvasó Sziget
           </Typography>
-          <Stack position={'fixed'} right='30px' direction="row" spacing={1}>
-            <AvatarComponent />
-            <IconButton LinkComponent={Link}  onClick={handleLogOut} sx={{color: '#f5e6d3', fontSize:'1em'}}>
-              <ExitToAppOutlinedIcon> </ExitToAppOutlinedIcon>
-              Kilépés
-            </IconButton>
-          </Stack>
         </Toolbar>
       </AppBar>
       <Drawer variant="permanent" open={open}>
-        <DrawerHeader>
-          <IconButton onClick={handleDrawerClose} sx={{ color: '#895737' }}>
+      <DrawerHeader sx={{marginBottom:'8px'}}>
+          <AvatarComponent sx={{ marginTop:'4px'}}/>
+          <Typography sx={{ color: '#895737', marginLeft: '10px', marginTop:'4px' }}>
+            @{currentUserName}
+          </Typography>
+          <IconButton onClick={handleDrawerClose} sx={{ color: '#895737', marginLeft: 'auto' }}>
             {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
           </IconButton>
         </DrawerHeader>
-        <Divider />
+        <Divider sx={{ borderWidth: '1px', backgroundColor :'#895737', marginBottom:'8px' }} variant='middle'/>
         <List>
           {['Főoldal', 'Profil', 'Követések', 'Chatszobák', 'Statisztika', 'Célkitűzés'].map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: 'block' }}>
@@ -230,6 +226,33 @@ export default function AppFrame({children}: Props) {
                     index % 6 === 0 ? <HomeOutlinedIcon /> : index % 6 === 1 ? <AccountCircleOutlinedIcon /> : index % 6 === 2 ? <PersonAddAltOutlinedIcon /> : index % 6 === 3 ? <MarkUnreadChatAltOutlinedIcon /> : index % 6 === 4 ? <EqualizerOutlinedIcon /> : <EventAvailableOutlinedIcon />
                   }
                   
+                </ListItemIcon>
+                <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+        <Divider sx={{ borderWidth: '1px', backgroundColor :'#895737', marginBottom:'8px' }} variant='middle' />
+        <List>
+          {['Kilépés'].map((text) => (
+            <ListItem key={text} disablePadding sx={{ display: 'block' }}>
+              <ListItemButton
+                sx={{
+                  minHeight: 48,
+                  justifyContent: open ? 'initial' : 'center',
+                  px: 2.5,
+                }}
+                onClick={handleLogOut}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: open ? 3 : 'auto',
+                    justifyContent: 'center',
+                    color: '#895737'
+                  }}
+                >
+                  {<ExitToAppOutlinedIcon />}
                 </ListItemIcon>
                 <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>
