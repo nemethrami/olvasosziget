@@ -22,7 +22,7 @@ import {
   RadioGroup, 
   FormControlLabel, 
   Radio, 
-  Typography
+  Typography,
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
@@ -169,23 +169,29 @@ const ChatRooms = () => {
   // Szobák megjelenítése táblázatban
   const renderTable = (rooms: DocumentData[]) => (
     <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: 2 }}>
-      <TableContainer component={Paper} sx={{ maxWidth: '600px', width: '100%' }}>
-        <Table>
-          <TableHead>
+      <TableContainer component={Paper} sx={{ maxWidth: '600px', width: '100%', background: 'linear-gradient(135deg, #eae2ca 30%, #f5f0e1 90%)', borderRadius:'8px', boxShadow: 3, border: '1px solid #d1cfcf', overflow: 'hidden'}}>
+        <Table sx={{ tableLayout: 'fixed' }}>
+          <TableHead sx={{borderBottom: '2px solid #4A4B2D'}}>
             <TableRow>
-              <TableCell style={{ width: '20%' }}>Szoba neve</TableCell>
-              <TableCell style={{ width: '20%' }}>Létrehozó</TableCell>
-              <TableCell style={{ width: '40%' }}>Létrehozás dátuma</TableCell>
-              <TableCell style={{ width: '10%' }}>Csatlakozás</TableCell>
-              <TableCell style={{ width: '10%' }}>Törlés</TableCell>
+              <TableCell style={{ fontWeight:'bold', width:'20%' }}>Szoba neve</TableCell>
+              <TableCell style={{ fontWeight:'bold', width: '20%' }}>Létrehozó</TableCell>
+              <TableCell style={{ fontWeight:'bold', whiteSpace: 'nowrap', width: '20%' }}>Létrehozás dátum</TableCell>
+              <TableCell style={{ fontWeight:'bold', width: '12%' }}>Csatlakozás</TableCell>
+              <TableCell style={{ fontWeight:'bold', width: '10%' }}>Törlés</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {rooms.map((room) => (
-              <TableRow key={room.id}>
+              <TableRow key={room.id}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: '#e5d2b8', 
+                  },
+                }}
+              >
                 <TableCell>{room.name}</TableCell>
                 <TableCell>{room.creator}</TableCell>
-                <TableCell>{room.created_at.toDate().toLocaleString()}</TableCell>
+                <TableCell>{room.created_at.toDate().toLocaleDateString()}</TableCell>
                 <TableCell>
                   <IconButton aria-label="connect" onClick={(e) => handleLogInChatRoom(e, room)}>
                     <PersonAddIcon />
