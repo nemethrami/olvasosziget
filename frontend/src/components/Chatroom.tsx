@@ -1,19 +1,27 @@
-import { useParams } from 'react-router-dom';
+//import { useParams } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { Box, TextField, Button, List, ListItem, Typography, Paper } from '@mui/material';
+import { Box, TextField, Button, List, ListItem, Typography, Paper, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from '@mui/material';
 import { getCurrentUserName, addDataToCollectionWithAutoID, getCollectionByID } from '../services/FirebaseService';
 import dayjs from 'dayjs';
 import { DocumentData, onSnapshot } from 'firebase/firestore';
 import { MessageModel } from '../models/MessageModel';
 import { generateRandomId } from '../services/RandomService';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-function ChatRoom() {
+
+type Props = {
+  id: string,
+  roomData: DocumentData
+}
+
+function ChatRoom({ id, roomData }: Props) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const { id } = useParams<{ id: string }>();
+  // const { id } = useParams<{ id: string }>();
 
   const [messages, setMessages] = useState<DocumentData[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
   const [currentUserName, setCurrentUserName] = useState<string>('');
+  const [openInfoModal, setOpenInfoModal] = useState<boolean>(false);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -28,6 +36,14 @@ function ChatRoom() {
 
     await addDataToCollectionWithAutoID('messages', newMessageObject);
     setNewMessage('');
+  };
+
+  const handleOpenInfoModal = async () => {
+    setOpenInfoModal(true);
+  };
+  
+  const handleCloseInfoModal = () => {
+    setOpenInfoModal(false);
   };
 
   useEffect(() => {
@@ -67,11 +83,28 @@ function ChatRoom() {
         height: '85vh',
       }}
     >
-        <Box sx={{ display: 'flex', width: '100%', justifyContent: 'center', alignItems: 'center', color: 'grey' }}>
-            <Typography variant="h4" gutterBottom>
-                Chatroom: {id}
+        <Box>
+          <Box sx={{ display: 'flex', width: '100%', justifyContent: 'center', alignItems: 'center', color: 'grey' }}>
+            <Typography variant="h5" gutterBottom>
+              Szoba neve: {id}
             </Typography>
-        </Box>
+            <IconButton onClick={handleOpenInfoModal} sx={{ marginLeft: '10px', bottom:'5px' }}>
+              <InfoOutlinedIcon />
+            </IconButton>
+          </Box>
+
+        {/* Modális ablak */}
+        <Dialog open={openInfoModal} onClose={handleCloseInfoModal}>
+          <DialogTitle>Szoba Információ</DialogTitle>
+          <DialogContent>
+            <Typography variant="body1">Létrehozó: {roomData.creator}</Typography>
+            <Typography variant="body1">Létrehozva: {dayjs(roomData.created_at.toDate()).format('YYYY.MM.DD - HH:mm:ss')}</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseInfoModal}>Bezár</Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
       
       <Paper
         sx={{
