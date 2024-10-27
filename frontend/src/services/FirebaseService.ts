@@ -2,6 +2,7 @@ import { addDoc, arrayRemove, arrayUnion, collection, CollectionReference, delet
 import { auth, googleProvider, db, storage } from "../config/FirebaseConfig";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { ref } from "firebase/storage";
+import { CommentModel } from "../models/ReviewModel";
 
 export async function googleSignIn() {
     googleProvider.setCustomParameters({
@@ -125,4 +126,34 @@ export async function getAvatarUrlByUserName(userName: string) {
 export async function getDocsByQuery(query: Query<DocumentData, DocumentData>) {
     const docSnap: QuerySnapshot<DocumentData, DocumentData> = await getDocs(query);
     return !docSnap.empty ? docSnap.docs : null;
+}
+
+export async function postLike(postId: string, value: string) {
+    await updateDoc(getDocRef('reviews', postId), {
+        likes: arrayUnion(value),
+    });
+}
+
+export async function postDislike(postId: string, value: string) {
+    await updateDoc(getDocRef('reviews', postId), {
+        likes: arrayRemove(value),
+    });
+}
+
+export async function postComment(postId: string, value: CommentModel) {
+    await updateDoc(getDocRef('reviews', postId), {
+        comments: arrayUnion(value),
+    });
+}
+
+export async function postCommentDelete(postId: string, value: CommentModel) {
+    await updateDoc(getDocRef('reviews', postId), {
+        comments: arrayRemove(value),
+    });
+}
+
+export async function getUidByUserName(userName: string) {
+    const collectionData: QuerySnapshot<DocumentData, DocumentData> = await getCollectionDataByID('users');
+    const userData = collectionData.docs.filter((doc) => doc.data().username === userName);
+    return userData[0].id;
 }

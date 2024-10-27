@@ -11,8 +11,8 @@ import "./BookSearch.css";
 import InputBase from '@mui/material/InputBase';
 import SearchIcon from '@mui/icons-material/Search';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Rating, TextField, Typography } from '@mui/material';
-import { addDataToCollectionWithAutoID, getCollectionByID, getCollectionDataByID, getDocsByQuery } from '../services/FirebaseService';
-import { CollectionReference, DocumentData, query, Query, QueryDocumentSnapshot, QuerySnapshot, where } from 'firebase/firestore';
+import { addDataToCollectionWithAutoID, getCollectionByID, getCollectionDataByID, getCurrentUserName, getDocsByQuery } from '../services/FirebaseService';
+import { CollectionReference, DocumentData, query, Query, QueryDocumentSnapshot, QuerySnapshot, Timestamp, where } from 'firebase/firestore';
 import { ReviewModel } from '../models/ReviewModel';
 
 
@@ -20,6 +20,7 @@ function BookSearch() {
     const [book, setBook] = useState<string>('');
     const [review, setReview] = useState<string>('');
     const [currentBook, setCurrentBook] = useState<BookModel | null>(null);
+    const [currentUsername, setCurrentUsername] = useState<string>('');
     const [ratingValue, setRatingValue] = useState<number>(0);
     const [avgRating, setAvgRating] = useState<number>(0.0);
     const [books, setBooks] = useState<BookModel[]>([]);
@@ -46,9 +47,11 @@ function BookSearch() {
           index === self.findIndex((t) => t.id === item.id)
         );
         setBooks(uniqueItems);
+        setCurrentUsername(await getCurrentUserName());
     }
 
     useEffect(() => {
+        if (!localStorage.getItem('uid')) return;
         fetchPosts();
     }, []);
 
@@ -89,6 +92,8 @@ function BookSearch() {
     }
 
     async function openAddReviewDialog(book: BookModel) {
+        if (!localStorage.getItem('uid')) return;
+
         setCurrentBook(book);
 
         try {
@@ -122,11 +127,15 @@ function BookSearch() {
     }
 
     async function handleAddReview() {
-        const currentUid: string = localStorage.getItem('uid') || ''
+        const currentUid: string | null = localStorage.getItem('uid')
+
+        if (!currentUid) return;
+        
         const newData: ReviewModel = {
             book: currentBook,
             created_uid: currentUid,
-            created_at: new Date(),
+            created_username: currentUsername,
+            created_at: Timestamp.now(),
             comments: [],
             likes: [],
             rating: ratingValue,

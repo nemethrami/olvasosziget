@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Box, TextField, Button, List, ListItem, Typography, Paper, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from '@mui/material';
 import { getCurrentUserName, addDataToCollectionWithAutoID, getCollectionByID } from '../services/FirebaseService';
 import dayjs from 'dayjs';
-import { DocumentData, onSnapshot } from 'firebase/firestore';
+import { DocumentData, onSnapshot, Timestamp } from 'firebase/firestore';
 import { MessageModel } from '../models/MessageModel';
 import { generateRandomId } from '../services/RandomService';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -30,7 +30,7 @@ function ChatRoom({ id, roomData }: Props) {
       id: generateRandomId(12),
       user: currentUserName,
       text: newMessage,
-      created_at: new Date(),
+      created_at: Timestamp.now(),
       room_id: id || '',
     };
 

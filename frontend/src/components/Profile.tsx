@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, IconButton, Divider, List, ListItemText, ListItem, TextField, Rating, Tabs, Tab } from '@mui/material';
-import { getStorageRef, getDocRef, getAvatarUrlByUserName, getCollectionByID, getDocsByQuery } from '../services/FirebaseService';
+import { getStorageRef, getDocRef, getAvatarUrlByUserName, getCollectionByID, postLike, postDislike, getCurrentUserName, postComment, postCommentDelete, deleteDocDataByID } from '../services/FirebaseService';
 import { getDownloadURL, uploadBytes } from 'firebase/storage';
-import { CollectionReference, DocumentData, query, Query, QueryDocumentSnapshot, updateDoc, where } from 'firebase/firestore';
+import { DocumentData, onSnapshot, QueryDocumentSnapshot, Timestamp, updateDoc } from 'firebase/firestore';
 import AvatarComponent from './AvatarComponent';
 import { useParams } from 'react-router-dom';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import dayjs from 'dayjs';
 import edition_placeholder from '../assets/edition_placeholder.png'
 import { CommentModel } from '../models/ReviewModel';
+import CloseIcon from '@mui/icons-material/Close';
 
 
 const UserProfile: React.FC = () => {
@@ -19,25 +21,41 @@ const UserProfile: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [tabValue, setTabValue] = React.useState(0);
 
-  const [newComment, setNewComment] = useState('');
   const [posts, setPosts] = useState<QueryDocumentSnapshot<DocumentData, DocumentData>[] >([]);
   const [postDatas, setPostDatas] = useState<DocumentData[]>([]);
+  const [goals, setGoals] = useState<QueryDocumentSnapshot<DocumentData, DocumentData>[] >([]);
+  const [goalDatas, setGoalDatas] = useState<DocumentData[]>([]);
+  const [newComments, setNewComments] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      const currentUid: string | null = localStorage.getItem('uid')
-      if (!id || !currentUid) return;
-
-      const reviewsRef: CollectionReference<DocumentData, DocumentData> = getCollectionByID('reviews');
-      const q: Query<DocumentData, DocumentData> = query(reviewsRef, where('created_uid', '==', currentUid))
-
-      const querySnapshot: QueryDocumentSnapshot<DocumentData, DocumentData>[] = await getDocsByQuery(q);
-      const data: DocumentData[] = querySnapshot.map(doc => doc.data());
-      setPosts(querySnapshot.sort((a, b) => b.data().created_at.toDate().getTime() - a.data().created_at.toDate().getTime()));
+    // Set up the real-time listener
+    const unsubscribe = onSnapshot(getCollectionByID('reviews'), (querySnapshot) => {
+      const filteredResult = querySnapshot.docs.filter(doc => doc.data().created_username === id);
+      const data: DocumentData[] = filteredResult.map(doc => doc.data());
+      setPosts(filteredResult.sort((a, b) => b.data().created_at.toDate().getTime() - a.data().created_at.toDate().getTime()));
       setPostDatas(data.sort((a, b) => b.created_at.toDate().getTime() - a.created_at.toDate().getTime()))
-    }
+      setNewComments(Array(data.length).fill(''));
+    }, (error) => {
+      console.error('Error fetching review data:', error);
+    });
 
-    fetchPosts();
+    // Cleanup listener on unmount
+    return () => unsubscribe();
+  }, [id]);
+
+  useEffect(() => {
+    // Set up the real-time listener
+    const unsubscribe = onSnapshot(getCollectionByID('goals'), (querySnapshot) => {
+      const filteredResult = querySnapshot.docs.filter(doc => doc.data().created_username === id);
+      const data: DocumentData[] = filteredResult.map(doc => doc.data());
+      setGoals(filteredResult.sort((a, b) => b.data().created_at.toDate().getTime() - a.data().created_at.toDate().getTime()));
+      setGoalDatas(data.sort((a, b) => b.created_at.toDate().getTime() - a.created_at.toDate().getTime()))
+    }, (error) => {
+      console.error('Error fetching goal data:', error);
+    });
+
+    // Cleanup listener on unmount
+    return () => unsubscribe();
   }, [id]);
 
   useEffect(() => {
@@ -102,41 +120,108 @@ const UserProfile: React.FC = () => {
     setSelectedImage(null);
   };
 
-  const handleLike = (id: string, likes: string[]) => {
+  const handleBookRead = async (goalId) => {
+    console.log(goalId)
+    /* try {
+      const goalRef = doc(firestore, 'goals', goalId); // Cseréld ki a 'goals' a megfelelő kollekció nevére
+      await updateDoc(goalRef, {
+        completed_books: increment(1), // Növeli az elolvasott könyvek számát
+        goal_amount: increment(-1) // Csökkenti a célzott könyvek számát
+      });
+      // Opció: Töltsd fel az állapotot, hogy a felhasználó láthassa a frissítést
+    } catch (error) {
+      console.error("Hiba történt a könyv elolvasásakor:", error);
+    } */
+  };
+
+  const handleLike = async (idx: number, likes: string[], postId: string) => {
     if (!currentUserId) return;
 
     const newValue: string[] = [...likes, currentUserId];
 
     setPostDatas((prevItems) =>
-      prevItems.map((item) =>
-        item.id === id ? { ...item, likes: newValue } : item
+      prevItems.map((item, index) =>
+        index === idx ? { ...item, likes: newValue } : item
       )
     );
 
-    console.log(postDatas)
+    await postLike(postId, currentUserId)
   };
 
-  const handleAddComment = (postId: string, comments: CommentModel[], newComment: string) => {
-    const newValue: CommentModel[] = [...comments, {username: id, text: newComment, created_at: new Date()}]
+  const handleDislike = async (idx: number, likes: string[], postId: string) => {
+    if (!currentUserId) return;
+
+    const newValue: string[] = likes.filter(item => item !== currentUserId);
 
     setPostDatas((prevItems) =>
-      prevItems.map((item) =>
-        item.id === postId ? { ...item, comments: newValue } : item
+      prevItems.map((item, index) =>
+        index === idx ? { ...item, likes: newValue } : item
       )
     );
 
-    setNewComment('');
+    await postDislike(postId, currentUserId)
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, id: string, comments: CommentModel[], newComment: string) => {
+  const handleAddComment = async (idx: number, comments: CommentModel[], newComment: string, postId: string) => {
+    const currentUserName: string = await getCurrentUserName();
+    const newValue: CommentModel[] = [...comments, {username: currentUserName, text: newComment, created_at: Timestamp.now()}]
+
+    setPostDatas((prevItems) =>
+      prevItems.map((item, index) =>
+        index === idx ? { ...item, comments: newValue } : item
+      )
+    );
+
+    await postComment(postId, {username: currentUserName, text: newComment, created_at: Timestamp.now()});
+
+    handleCommentChange(idx, '');
+  };
+
+  const handleDeleteComment = async (idx: number, comments: CommentModel[], postId: string, comment: CommentModel) => {
+    const newValue: CommentModel[] = comments.filter(com => com !== comment)
+
+    setPostDatas((prevItems) =>
+      prevItems.map((item, index) =>
+        index === idx ? { ...item, comments: newValue } : item
+      )
+    );
+
+    await postCommentDelete(postId, comment);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, idx: number, comments: CommentModel[], newComment: string, postId: string) => {
     if (event.key === 'Enter') {
-      handleAddComment(id, comments, newComment);
+      handleAddComment(idx, comments, newComment,  postId);
     }
+  };
+
+  const handleCommentChange = (index: number, value: string) => {
+    const newComms = [...newComments];
+    newComms[index] = value;
+    setNewComments(newComms);
   };
 
   function handleTabChange(event: React.SyntheticEvent, newValue: number) {
     setTabValue(newValue);
   }
+
+  const handleDeletePost = async (idx: number, postId: string) => {
+    setPostDatas((prevItems) =>
+      prevItems.filter((item, index) => index !== idx)
+    );
+
+    await deleteDocDataByID('reviews', postId);
+  };
+
+  const handleDeleteGoal = async (idx: number, goalId: string) => {
+    console.log(goalId)
+
+    setGoalDatas((prevItems) =>
+      prevItems.filter((item, index) => index !== idx)
+    );
+
+    // await deleteDocDataByID('goals', goalId);
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -159,16 +244,36 @@ const UserProfile: React.FC = () => {
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black' }}>
-            {0}
+            {goals.length}
           </Typography>
           <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black' }}>
             Célok
           </Typography>
         </Box>
       </Box>
-      <Tabs value={tabValue} onChange={handleTabChange} centered sx={{ marginBottom: '40px' }}>
-        <Tab label="Könyv értékelések" />
-        <Tab label="Célok" />
+      <Tabs value={tabValue} onChange={handleTabChange} centered 
+        sx={{ 
+          marginBottom: '40px',
+          '& .MuiTabs-indicator': {
+            backgroundColor: '#794f29', 
+          }
+          }}>
+        <Tab label="Könyv értékelések" 
+          sx={{ 
+            color:'#794f29', 
+            '&.Mui-selected': {
+              color: '#794f29',
+            },
+          }}
+        />
+        <Tab label="Célok" 
+          sx={{ 
+            color:'#794f29', 
+            '&.Mui-selected': {
+              color: '#794f29',
+            },
+          }}
+        />
       </Tabs>
       {tabValue === 0 && (
         <Box sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
@@ -177,7 +282,7 @@ const UserProfile: React.FC = () => {
 
             return (
               <Paper sx={{ padding: 2, marginBottom: 2, width: '90%', maxWidth: '1500px', overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all' }} key={postId}>
-                <Box sx={{ display: 'flex', marginBottom: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: 2 }}>
                   <Typography variant="body1" gutterBottom sx={{ marginRight: 'auto' }}>
                     {post.book.volumeInfo.title}
                   </Typography>
@@ -185,7 +290,9 @@ const UserProfile: React.FC = () => {
                     Rating: 
                   </Typography>
                   <Rating name="read-only" value={post.rating} readOnly />
-                  
+                  <IconButton onClick={() => {handleDeletePost(index, postId)}}>
+                    <CloseIcon />
+                  </IconButton>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-start', width: '100%' }}>
                   <img
@@ -220,8 +327,8 @@ const UserProfile: React.FC = () => {
                   {dayjs(post.created_at.toDate()).format('YYYY.MM.DD - HH:mm:ss')}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', marginTop: 1 }}>
-                  <IconButton onClick={() => handleLike(postId, post.likes)}>
-                    <ThumbUpIcon />
+                  <IconButton onClick={() => post.likes.includes(currentUserId) ? handleDislike(index, post.likes, postId) : handleLike(index, post.likes, postId)}>
+                    {post.likes.includes(currentUserId) ? <ThumbDownIcon /> : <ThumbUpIcon />}
                   </IconButton>
                   <Typography variant="body2">{post.likes.length} likes</Typography>
                 </Box>
@@ -229,37 +336,127 @@ const UserProfile: React.FC = () => {
                 <Typography variant="subtitle1">Comments</Typography>
                 <Box sx={{ display: 'flex', marginTop: 1 }}>
                   <TextField
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
+                    value={newComments[index]}
+                    onChange={(e) => handleCommentChange(index, e.target.value)}
                     placeholder="Write a comment..."
                     variant="outlined"
                     size="small"
                     fullWidth
                     sx={{ marginRight: 1 }}
-                    onKeyDown={(e) => handleKeyDown(e, postId, post.comments, newComment)}
+                    onKeyDown={(e) => handleKeyDown(e, index, post.comments, newComments[index], postId)}
                   />
-                  <Button variant="contained" onClick={() => handleAddComment(postId, post.comments, newComment)}>
+                  <Button variant="contained" onClick={() => handleAddComment(index, post.comments, newComments[index], postId)}>
                     Add
                   </Button>
                 </Box>
                 <List sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                  {post.comments.map((comment, index) => (
-                    <Box sx={{ marginBottom: '10px', backgroundColor: '#d0e7d0', borderRadius: '20px' }}>
-                      <Typography variant="body1" color="textSecondary" sx={{ paddingLeft: '10px' }}>
-                        {comment.username}
-                      </Typography>
-                      <ListItem key={index} sx={{ wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', p: '0', paddingLeft: '10px' }}>
-                        <ListItemText primary={comment.text} />
-                      </ListItem>
-                      <Typography variant="caption" color="textSecondary" sx={{ paddingLeft: '10px' }}>
-                        {dayjs(comment.created_at).format('YYYY.MM.DD - HH:mm:ss')}
-                      </Typography>
+                  {post.comments.map((comment, com_index) => (
+                    <Box sx={{ marginBottom: '10px', backgroundColor: '#d0e7d0', borderRadius: '20px', display: 'flex', flexDirection: 'row' }} key={com_index}>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column', marginRight: 'auto' }}>
+                        <Typography variant="body1" color="textSecondary" sx={{ paddingLeft: '15px' }}>
+                          {comment.username}
+                        </Typography>
+                        <ListItem key={com_index} sx={{ wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', p: '0', paddingLeft: '15px' }}>
+                          <ListItemText primary={comment.text} />
+                        </ListItem>
+                        <Typography variant="caption" color="textSecondary" sx={{ paddingLeft: '15px' }}>
+                          {dayjs(comment.created_at.toDate()).format('YYYY.MM.DD - HH:mm:ss')}
+                        </Typography>
+                      </Box>
+                      {<IconButton onClick={() => {handleDeleteComment(index, post.comments, postId, comment)}} sx={{ alignItems: 'start' }}>
+                        <CloseIcon />
+                      </IconButton>}
                     </Box>
                   ))}
                 </List>
               </Paper>
             )
           })}
+        </Box>
+      )}
+
+      {tabValue === 1 && (
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexDirection: 'column', width: '100%' }}>
+          <Box sx={{ display: 'flex', width: '100%' }}>
+            <Typography variant="h6" sx={{ 
+              color: '#895737',
+              fontWeight: '600',
+              fontFamily: 'Times New Roman',  
+              width: '49%',
+              marginBottom: 2, // Opció: margó a célok oszlop és a cím között
+              marginRight: 'auto'
+            }}>
+              Elkezdett célok
+            </Typography>
+            <Typography variant="h6" sx={{
+                color: '#895737',
+                fontWeight: '600',
+                fontFamily: 'Times New Roman', 
+                width: '49%', 
+            }}>
+              Befejezett célok
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', width: '100%' }}>
+            {/* Elkezdett célok cím */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', width: '49%', maxWidth: '1500px', marginRight: 'auto', border: '1px solid', borderColor: 'grey', padding: 2 }}>
+              {goalDatas.filter((goal) => !goal.is_done).map((goal, index) => {
+                const goalId = goals[index].id;
+              return (
+              <Paper sx={{ padding: 2, marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                    <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                      Célnév: {goal.goal_name}
+                    </Typography>
+                    <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                      Elolvasandó könyvek száma: {goal.goal_amount}
+                    </Typography>
+                    <Divider sx={{ borderWidth: '1px', backgroundColor: '#895737', margin: '8px 0' }} variant='middle' />
+                    <Button 
+                      variant="contained" 
+                      onClick={() => handleBookRead(goalId)} 
+                      sx={{ backgroundColor: '#794f29', color: '#f5e6d3', marginBottom: '16px' }}
+                    >
+                      Könyv elolvasva
+                    </Button>
+                  </Box>
+                  <IconButton onClick={() => handleDeleteGoal(index, goalId)} sx={{ marginLeft: 'auto' }}>
+                    <CloseIcon />
+                  </IconButton>
+                </Box>
+              </Paper>
+
+              );
+            })}
+            </Box>
+
+            {/* Completed Goals Column */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', width: '49%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
+              {goalDatas.filter((goal) => goal.is_done).map((goal, index) => {
+                const goalId = goals[index].id;
+                return (
+                  <Paper sx={{ padding: 2, marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                          Célnév: {goal.goal_name}
+                        </Typography>
+                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                          Elolvasott könyvek száma: {goal.goal_amount}
+                        </Typography>
+                        <Divider sx={{ borderWidth: '1px', backgroundColor :'#895737', marginBottom:'8px' }} variant='middle' />
+                      </Box>
+                      <IconButton onClick={() => handleDeleteGoal(index, goalId)} sx={{ marginLeft: 'auto' }}>
+                        <CloseIcon />
+                      </IconButton>
+                    </Box>
+                  </Paper>
+                );
+              })}
+            </Box>
+          </Box>
         </Box>
       )}
 

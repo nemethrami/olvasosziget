@@ -23,7 +23,7 @@ import {
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { getCurrentUserName, deleteDocDataByID, addDataToCollection, getCollectionByID } from '../services/FirebaseService';
 import { db } from '../config/FirebaseConfig';
-import { onSnapshot, collection, DocumentData, CollectionReference, Query, query, where, QuerySnapshot, getDocs } from 'firebase/firestore';
+import { onSnapshot, collection, DocumentData, CollectionReference, Query, query, where, QuerySnapshot, getDocs, Timestamp } from 'firebase/firestore';
 import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined';
 
 const filterOptions = [
@@ -145,7 +145,7 @@ const ChatRooms = ({setRoomName, setRoomData}: Props) => {
     const newRoom: DocumentData = {
       name: newRoomName,
       creator: currentUserName!,
-      created_at: new Date(),
+      created_at: Timestamp.now(),
       is_private: isPrivate,
       password: password,
       id: newRoomName, // Use newRoomName or generate a unique ID
