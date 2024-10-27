@@ -20,7 +20,6 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined';
 import MarkUnreadChatAltOutlinedIcon from '@mui/icons-material/MarkUnreadChatAltOutlined';
 import EqualizerOutlinedIcon from '@mui/icons-material/EqualizerOutlined';
-import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import ExitToAppOutlinedIcon from '@mui/icons-material/ExitToAppOutlined';
 import { useNavigate } from 'react-router-dom';
@@ -166,10 +165,6 @@ export default function AppFrame({children}: Props) {
     navigate('/statistics')
   };
 
-  const handleGoal = () => {
-    navigate('/goal')
-  };
-
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -204,7 +199,7 @@ export default function AppFrame({children}: Props) {
         </DrawerHeader>
         <Divider sx={{ borderWidth: '1px', backgroundColor :'#895737', marginBottom:'8px' }} variant='middle'/>
         <List>
-          {['Főoldal', 'Profil', 'Követések', 'Chatszobák', 'Statisztika', 'Célkitűzés'].map((text, index) => (
+          {['Főoldal', 'Profil', 'Követések', 'Chatszobák', 'Statisztika'].map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: 'block' }}>
               <ListItemButton
                 sx={{
@@ -212,7 +207,7 @@ export default function AppFrame({children}: Props) {
                   justifyContent: open ? 'initial' : 'center',
                   px: 2.5,
                 }}
-                onClick={index % 6 ===0 ? handleHome : index % 6 === 1 ? handleProfil : index % 6 === 2 ? handleFollow : index % 6 === 3 ? handleChat : index % 6 === 4 ? handleStatistic : handleGoal}
+                onClick={index % 5 ===0 ? handleHome : index % 5 === 1 ? handleProfil : index % 5 === 2 ? handleFollow : index % 5 === 3 ? handleChat : handleStatistic}
               >
                 <ListItemIcon
                   sx={{
@@ -223,7 +218,7 @@ export default function AppFrame({children}: Props) {
                   }}
                 >
                   {
-                    index % 6 === 0 ? <HomeOutlinedIcon /> : index % 6 === 1 ? <AccountCircleOutlinedIcon /> : index % 6 === 2 ? <PersonAddAltOutlinedIcon /> : index % 6 === 3 ? <MarkUnreadChatAltOutlinedIcon /> : index % 6 === 4 ? <EqualizerOutlinedIcon /> : <EventAvailableOutlinedIcon />
+                    index % 5 === 0 ? <HomeOutlinedIcon /> : index % 5 === 1 ? <AccountCircleOutlinedIcon /> : index % 5 === 2 ? <PersonAddAltOutlinedIcon /> : index % 5 === 3 ? <MarkUnreadChatAltOutlinedIcon /> : <EqualizerOutlinedIcon />
                   }
                   
                 </ListItemIcon>

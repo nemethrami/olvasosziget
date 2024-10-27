@@ -152,6 +152,10 @@ export async function postCommentDelete(postId: string, value: CommentModel) {
     });
 }
 
+export async function updateGoalAttributes(goalId: string, attributes: Record<string, unknown>) {
+    await updateDoc(getDocRef('goals', goalId), attributes);
+}
+
 export async function getUidByUserName(userName: string) {
     const collectionData: QuerySnapshot<DocumentData, DocumentData> = await getCollectionDataByID('users');
     const userData = collectionData.docs.filter((doc) => doc.data().username === userName);
