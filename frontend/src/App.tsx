@@ -8,7 +8,6 @@ import MainHome from "./pages/MainHome";
 import FollowPage from "./pages/FollowPage";
 import ChatRoomsPage from "./pages/ChatroomsPage";
 import Statistics from "./pages/Statistic";
-import Goal from "./pages/Goal";
 import "./App.css";
 import './index.css';
 import { onAuthStateChanged } from "firebase/auth";
@@ -58,7 +57,6 @@ function App() {
         <Route path="/follow" element={user ? <FollowPage /> : <Navigate to="/mainhome" replace />} />
         <Route path="/chatrooms" element={user ? <ChatRoomsPage /> : <Navigate to="/mainhome" replace />} />
         <Route path="/statistics" element={user ? <Statistics /> : <Navigate to="/mainhome" replace />} />
-        <Route path="/goal" element={user ? <Goal /> : <Navigate to="/mainhome" replace />} />
         <Route path="/profile/:id" element={user ? <ProfilePage /> : <Navigate to="/mainhome" replace />} />
       </Routes>
     </BrowserRouter>

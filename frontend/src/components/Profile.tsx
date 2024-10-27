@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, IconButton, Divider, List, ListItemText, ListItem, TextField, Rating, Tabs, Tab } from '@mui/material';
-import { getStorageRef, getDocRef, getAvatarUrlByUserName, getCollectionByID, postLike, postDislike, getCurrentUserName, postComment, postCommentDelete, deleteDocDataByID } from '../services/FirebaseService';
+import { Box, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, IconButton, Divider, List, ListItemText, ListItem, TextField, Rating, Tabs, Tab, DialogContent } from '@mui/material';
+import { getStorageRef, getDocRef, getAvatarUrlByUserName, getCollectionByID, postLike, postDislike, getCurrentUserName, postComment, postCommentDelete, deleteDocDataByID, updateGoalAttributes, addDataToCollectionWithAutoID } from '../services/FirebaseService';
 import { getDownloadURL, uploadBytes } from 'firebase/storage';
 import { DocumentData, onSnapshot, QueryDocumentSnapshot, Timestamp, updateDoc } from 'firebase/firestore';
 import AvatarComponent from './AvatarComponent';
@@ -10,8 +10,39 @@ import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import dayjs from 'dayjs';
 import edition_placeholder from '../assets/edition_placeholder.png'
 import { CommentModel } from '../models/ReviewModel';
-import CloseIcon from '@mui/icons-material/Close';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import CircularProgress, {
+  CircularProgressProps,
+} from '@mui/material/CircularProgress';
+import { GoalModel } from '../models/GoalModel';
 
+function CircularProgressWithLabel(
+  props: CircularProgressProps & { value: number },
+) {
+  return (
+    <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+      <CircularProgress variant="determinate" {...props} />
+      <Box
+        sx={{
+          top: 0,
+          left: 0,
+          bottom: 0,
+          right: 0,
+          position: 'absolute',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Typography
+          variant="caption"
+          component="div"
+          sx={{ color: 'text.secondary' }}
+        >{`${Math.round(props.value)}%`}</Typography>
+      </Box>
+    </Box>
+  );
+}
 
 const UserProfile: React.FC = () => {
   const currentUserId: string | null = localStorage.getItem('uid');
@@ -21,11 +52,17 @@ const UserProfile: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [tabValue, setTabValue] = React.useState(0);
 
+  const [newComments, setNewComments] = useState<string[]>([]);
   const [posts, setPosts] = useState<QueryDocumentSnapshot<DocumentData, DocumentData>[] >([]);
   const [postDatas, setPostDatas] = useState<DocumentData[]>([]);
-  const [goals, setGoals] = useState<QueryDocumentSnapshot<DocumentData, DocumentData>[] >([]);
-  const [goalDatas, setGoalDatas] = useState<DocumentData[]>([]);
-  const [newComments, setNewComments] = useState<string[]>([]);
+
+  const [doneGoalDatas, setDoneGoalDatas] = useState<DocumentData[]>([]);
+  const [unDoneGoalDatas, setUnDoneGoalDatas] = useState<DocumentData[]>([]);
+  const [doneGoals, setDoneGoals] = useState<DocumentData[]>([]);
+  const [unDoneGoals, setUnDoneGoals] = useState<DocumentData[]>([]);
+  const [targetDate, setTargetDate] = useState<string>('');
+  const [newGoalName, setNewGoalName] = useState<string>('');
+  const [bookGoal, setBookGoal] = useState<number>(0);
 
   useEffect(() => {
     // Set up the real-time listener
@@ -48,8 +85,12 @@ const UserProfile: React.FC = () => {
     const unsubscribe = onSnapshot(getCollectionByID('goals'), (querySnapshot) => {
       const filteredResult = querySnapshot.docs.filter(doc => doc.data().created_username === id);
       const data: DocumentData[] = filteredResult.map(doc => doc.data());
-      setGoals(filteredResult.sort((a, b) => b.data().created_at.toDate().getTime() - a.data().created_at.toDate().getTime()));
-      setGoalDatas(data.sort((a, b) => b.created_at.toDate().getTime() - a.created_at.toDate().getTime()))
+      const goals: QueryDocumentSnapshot<DocumentData, DocumentData>[] = filteredResult.sort((a, b) => b.data().created_at.toDate().getTime() - a.data().created_at.toDate().getTime())
+      const goalDatas: DocumentData[] = data.sort((a, b) => b.created_at.toDate().getTime() - a.created_at.toDate().getTime())
+      setDoneGoals(goals.filter((doc) => doc.data().is_done))
+      setUnDoneGoals(goals.filter((doc) => !doc.data().is_done))
+      setDoneGoalDatas(goalDatas.filter((doc) => doc.is_done))
+      setUnDoneGoalDatas(goalDatas.filter((doc) => !doc.is_done))
     }, (error) => {
       console.error('Error fetching goal data:', error);
     });
@@ -120,18 +161,32 @@ const UserProfile: React.FC = () => {
     setSelectedImage(null);
   };
 
-  const handleBookRead = async (goalId) => {
+  const handleGoalComplete = async (goalId: string) => {
     console.log(goalId)
-    /* try {
-      const goalRef = doc(firestore, 'goals', goalId); // Cseréld ki a 'goals' a megfelelő kollekció nevére
-      await updateDoc(goalRef, {
-        completed_books: increment(1), // Növeli az elolvasott könyvek számát
-        goal_amount: increment(-1) // Csökkenti a célzott könyvek számát
-      });
-      // Opció: Töltsd fel az állapotot, hogy a felhasználó láthassa a frissítést
-    } catch (error) {
-      console.error("Hiba történt a könyv elolvasásakor:", error);
-    } */
+    await updateGoalAttributes(goalId, {
+      is_done: true
+    })
+  }
+
+  const handleBookRead = async (goalId: string, idx: number) => {
+    let comp_books: number = -1;
+    let goal_am: number = -1;
+
+    setUnDoneGoalDatas((prevItems) =>
+      prevItems.map((item, index) => {
+          comp_books = item.completed_books + 1;
+          goal_am = item.goal_amount - 1;
+          return index === idx ? { ...item, completed_books: comp_books, goal_amount: goal_am } : item
+        }
+      )
+    );
+
+    if (comp_books === -1 || goal_am === -1) return;
+
+    await updateGoalAttributes(goalId, {
+      completed_books: comp_books, 
+      goal_amount: goal_am
+    })
   };
 
   const handleLike = async (idx: number, likes: string[], postId: string) => {
@@ -213,15 +268,47 @@ const UserProfile: React.FC = () => {
     await deleteDocDataByID('reviews', postId);
   };
 
-  const handleDeleteGoal = async (idx: number, goalId: string) => {
+  const handleDeleteDoneGoal = async (idx: number, goalId: string) => {
     console.log(goalId)
 
-    setGoalDatas((prevItems) =>
+    setDoneGoalDatas((prevItems) =>
       prevItems.filter((item, index) => index !== idx)
     );
 
-    // await deleteDocDataByID('goals', goalId);
+    await deleteDocDataByID('goals', goalId);
   };
+
+  const handleDeleteUnDoneGoal = async (idx: number, goalId: string) => {
+    console.log(goalId)
+
+    setUnDoneGoalDatas((prevItems) =>
+      prevItems.filter((item, index) => index !== idx)
+    );
+
+    await deleteDocDataByID('goals', goalId);
+  };
+
+  const handleNewGoal = () => {
+    setDialogOpen(true);
+  };
+
+  const addNewGoal = async () => {
+    const currentUserName: string = await getCurrentUserName();
+
+    const newGoal: GoalModel = {
+      created_at: Timestamp.now(),
+      created_uid: currentUserId,
+      created_username: currentUserName,
+      goal_amount: bookGoal,
+      goal_name: newGoalName,
+      completed_books: 0,
+      is_done: false
+    }
+
+    await addDataToCollectionWithAutoID('goals', newGoal);
+
+    handleDialogClose();
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -244,7 +331,7 @@ const UserProfile: React.FC = () => {
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black' }}>
-            {goals.length}
+            {doneGoals.length + unDoneGoals.length}
           </Typography>
           <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black' }}>
             Célok
@@ -291,7 +378,7 @@ const UserProfile: React.FC = () => {
                   </Typography>
                   <Rating name="read-only" value={post.rating} readOnly />
                   <IconButton onClick={() => {handleDeletePost(index, postId)}}>
-                    <CloseIcon />
+                    <DeleteForeverOutlinedIcon />
                   </IconButton>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-start', width: '100%' }}>
@@ -364,7 +451,7 @@ const UserProfile: React.FC = () => {
                         </Typography>
                       </Box>
                       {<IconButton onClick={() => {handleDeleteComment(index, post.comments, postId, comment)}} sx={{ alignItems: 'start' }}>
-                        <CloseIcon />
+                        <DeleteForeverOutlinedIcon />
                       </IconButton>}
                     </Box>
                   ))}
@@ -377,65 +464,93 @@ const UserProfile: React.FC = () => {
 
       {tabValue === 1 && (
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexDirection: 'column', width: '100%' }}>
-          <Box sx={{ display: 'flex', width: '100%' }}>
-            <Typography variant="h6" sx={{ 
-              color: '#895737',
-              fontWeight: '600',
-              fontFamily: 'Times New Roman',  
-              width: '49%',
-              marginBottom: 2, // Opció: margó a célok oszlop és a cím között
-              marginRight: 'auto'
-            }}>
-              Elkezdett célok
-            </Typography>
-            <Typography variant="h6" sx={{
+          <Box sx={{ display: 'flex', width: '100%' }} gap={5}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '42%' }}>
+              <Typography variant="h6" sx={{ 
                 color: '#895737',
                 fontWeight: '600',
-                fontFamily: 'Times New Roman', 
-                width: '49%', 
-            }}>
-              Befejezett célok
-            </Typography>
+                fontFamily: 'Times New Roman',  
+                marginBottom: 1, // Opció: margó a célok oszlop és a cím között
+                marginRight: '20px'
+              }}>
+                Elkezdett célok
+              </Typography>
+              <Button onClick={() => handleNewGoal()} sx={{ }}>
+                + Új cél
+              </Button>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '42%' }}>
+              <Typography variant="h6" sx={{
+                  color: '#895737',
+                  fontWeight: '600',
+                  fontFamily: 'Times New Roman', 
+              }}>
+                Befejezett célok
+              </Typography>
+            </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', width: '100%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%' }} gap={5}>
             {/* Elkezdett célok cím */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', width: '49%', maxWidth: '1500px', marginRight: 'auto', border: '1px solid', borderColor: 'grey', padding: 2 }}>
-              {goalDatas.filter((goal) => !goal.is_done).map((goal, index) => {
-                const goalId = goals[index].id;
-              return (
-              <Paper sx={{ padding: 2, marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                    <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
-                      Célnév: {goal.goal_name}
-                    </Typography>
-                    <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
-                      Elolvasandó könyvek száma: {goal.goal_amount}
-                    </Typography>
-                    <Divider sx={{ borderWidth: '1px', backgroundColor: '#895737', margin: '8px 0' }} variant='middle' />
-                    <Button 
-                      variant="contained" 
-                      onClick={() => handleBookRead(goalId)} 
-                      sx={{ backgroundColor: '#794f29', color: '#f5e6d3', marginBottom: '16px' }}
-                    >
-                      Könyv elolvasva
-                    </Button>
+            <Box sx={{ display: 'flex', flexDirection: 'column', width: '42%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
+              {unDoneGoalDatas.map((goal, index) => {
+                const goalId = unDoneGoals[index].id;
+
+                return (
+                <Paper sx={{ padding: 2, marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                      <Box sx={{display:'flex', flexDirection:'row', width:'100%'}}>
+                        <Box sx={{display:'flex', width:'50%', flexDirection:'column', marginRight:'auto',}}>
+                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                            Célnév: {goal.goal_name}
+                          </Typography>
+                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                            Elolvasandó könyvek száma: {goal.goal_amount}
+                          </Typography>
+                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                            Elolvasott könyvek száma: {goal.completed_books}
+                          </Typography>
+                        </Box>
+                        <Box sx={{display:'flex', width:'50%', justifyContent:'center', alignItems:'center'}}>
+                          <CircularProgressWithLabel value={(goal.completed_books / (goal.goal_amount + goal.completed_books)) * 100} />
+                        </Box>
+                      </Box>
+                      <Divider sx={{ borderWidth: '1px', backgroundColor: '#895737', margin: '8px 0' }} variant='middle' />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: '16px' }}>
+                        <Button 
+                          variant="contained" 
+                          onClick={() => handleBookRead(goalId, index)} 
+                          sx={{ backgroundColor: '#794f29', color: '#f5e6d3', width:'190px' }}
+                        >
+                          + Könyv elolvasva
+                        </Button>
+                        <Button 
+                          variant="contained" 
+                          onClick={() => handleGoalComplete(goalId)} 
+                          sx={{ backgroundColor: '#794f29', color: '#f5e6d3', width:'160px' }}
+                          disabled={goal.goal_amount !== 0}
+                        >
+                          Cél befejezése
+                        </Button>
+                        <IconButton onClick={() => handleDeleteUnDoneGoal(index, goalId)} sx={{ marginRight:'10px' }}>
+                          <DeleteForeverOutlinedIcon/>
+                        </IconButton>
+                      </Box>
+                    </Box>
+
                   </Box>
-                  <IconButton onClick={() => handleDeleteGoal(index, goalId)} sx={{ marginLeft: 'auto' }}>
-                    <CloseIcon />
-                  </IconButton>
-                </Box>
-              </Paper>
+                </Paper>
 
               );
             })}
             </Box>
 
             {/* Completed Goals Column */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', width: '49%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
-              {goalDatas.filter((goal) => goal.is_done).map((goal, index) => {
-                const goalId = goals[index].id;
+            <Box sx={{ display: 'flex', flexDirection: 'column', width: '42%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
+              {doneGoalDatas.map((goal, index) => {
+                const goalId = doneGoals[index].id;
+
                 return (
                   <Paper sx={{ padding: 2, marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -444,12 +559,12 @@ const UserProfile: React.FC = () => {
                           Célnév: {goal.goal_name}
                         </Typography>
                         <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
-                          Elolvasott könyvek száma: {goal.goal_amount}
+                          Elolvasott könyvek száma: {goal.completed_books}
                         </Typography>
                         <Divider sx={{ borderWidth: '1px', backgroundColor :'#895737', marginBottom:'8px' }} variant='middle' />
                       </Box>
-                      <IconButton onClick={() => handleDeleteGoal(index, goalId)} sx={{ marginLeft: 'auto' }}>
-                        <CloseIcon />
+                      <IconButton onClick={() => handleDeleteDoneGoal(index, goalId)} sx={{ marginLeft: 'auto' }}>
+                        <DeleteForeverOutlinedIcon />
                       </IconButton>
                     </Box>
                   </Paper>
@@ -481,6 +596,45 @@ const UserProfile: React.FC = () => {
             Mentés
           </Button>
           <Button onClick={handleDialogClose}>Mégse</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog a cél létrehozásához */}
+      <Dialog open={dialogOpen} onClose={handleDialogClose}>
+        <DialogTitle>Új olvasási cél létrehozása</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+            <TextField
+              label="Nevezd el a célodat"
+              type="text"
+              value={newGoalName}
+              onChange={(e) => setNewGoalName(e.target.value)}
+              fullWidth
+              sx={{ margin: '10px' }}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Cél dátuma"
+              type="date"
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+              fullWidth
+              sx={{ margin: '10px' }}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Könyvek száma"
+              type="number"
+              value={bookGoal}
+              onChange={(e) => setBookGoal(Number(e.target.value))}
+              fullWidth
+              sx={{ margin: '10px' }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose}>Mégse</Button>
+          <Button onClick={() => addNewGoal()}>Létrehozás</Button>
         </DialogActions>
       </Dialog>
     </Box>
