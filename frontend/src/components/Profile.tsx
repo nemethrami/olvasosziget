@@ -475,7 +475,23 @@ const UserProfile: React.FC = () => {
               }}>
                 Elkezdett célok
               </Typography>
-              <Button onClick={() => handleNewGoal()} sx={{ }}>
+              <Button onClick={() => handleNewGoal()}
+                sx={{ 
+                  backgroundColor: '#eae2ca', 
+                  color: '#895737',
+                  fontWeight: '600',
+                  height:'30px',
+                  fontFamily: 'Times New Roman', 
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  border: 'none',
+                  transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                  '&:hover': {
+                    backgroundColor: '#90784f', // Change background color on hover
+                    color: '#f3e9dc',
+                  }
+                }}
+                >
                 + Új cél
               </Button>
             </Box>
@@ -521,14 +537,30 @@ const UserProfile: React.FC = () => {
                         <Button 
                           variant="contained" 
                           onClick={() => handleBookRead(goalId, index)} 
-                          sx={{ backgroundColor: '#794f29', color: '#f5e6d3', width:'190px' }}
+                          sx={{ 
+                            backgroundColor: '#eae2ca',  
+                            color: '#895737', 
+                            width:'190px', 
+                            transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                            '&:hover': {
+                              backgroundColor: '#90784f', // Change background color on hover
+                              color: '#f3e9dc',
+                            } }}
                         >
                           + Könyv elolvasva
                         </Button>
                         <Button 
                           variant="contained" 
                           onClick={() => handleGoalComplete(goalId)} 
-                          sx={{ backgroundColor: '#794f29', color: '#f5e6d3', width:'160px' }}
+                          sx={{ 
+                            backgroundColor: '#eae2ca',  
+                            color: '#895737', 
+                            width:'190px', 
+                            transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                            '&:hover': {
+                              backgroundColor: '#90784f', // Change background color on hover
+                              color: '#f3e9dc',
+                            } }}
                           disabled={goal.goal_amount !== 0}
                         >
                           Cél befejezése
