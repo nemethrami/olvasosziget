@@ -8,12 +8,12 @@ import ImageListItemBar from '@mui/material/ImageListItemBar';
 import IconButton from '@mui/material/IconButton';
 import InfoIcon from '@mui/icons-material/Info';
 import "./BookSearch.css";
-import InputBase from '@mui/material/InputBase';
 import SearchIcon from '@mui/icons-material/Search';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Rating, TextField, Typography } from '@mui/material';
 import { addDataToCollectionWithAutoID, getCollectionByID, getCollectionDataByID, getCurrentUserName, getDocsByQuery } from '../services/FirebaseService';
 import { CollectionReference, DocumentData, query, Query, QueryDocumentSnapshot, QuerySnapshot, Timestamp, where } from 'firebase/firestore';
 import { ReviewModel } from '../models/ReviewModel';
+import InputAdornment from '@mui/material/InputAdornment';
 
 
 function BookSearch() {
@@ -155,16 +155,22 @@ function BookSearch() {
         <>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <form className='form' style={{ display: 'flex', width: '100%', maxWidth: '900px' }} >
-                    <InputBase
-                        onChange={(e) => setBook(e.target.value)}
-                        sx={{ width: '100%', maxWidth: '900px' }}
-                        placeholder="Search for books"
-                        inputProps={{ 'aria-label': 'search books' }}
-                        autoComplete='off'
+                    <TextField
+                    label="Keresés"
+                    variant="outlined"
+                    sx={{ width: '140%', maxWidth: '600px' }}
+                    onChange={(e) => setBook(e.target.value)}
+                    InputProps={{
+                        endAdornment: (
+                        <InputAdornment position="end">
+                            <IconButton type="submit" sx={{ p: '10px' }} aria-label="search" onClick={(e) => fetchBooks(e)}>
+                            <SearchIcon />
+                            </IconButton>
+                        </InputAdornment>
+                        ),
+                    }}
                     />
-                    <IconButton type="submit" sx={{ p: '10px' }} aria-label="search" onClick={(e) => fetchBooks(e)}>
-                        <SearchIcon />
-                    </IconButton>
+
                 </form>
                 {loading && <p>Loading...</p>}
                 {error && <p style={{color: 'red'}}>Error: {error}</p>}

@@ -39,6 +39,7 @@ const StatisticsPage: React.FC<StatisticProps> = ({ totalBooksRead, avgRating, f
                 fontFamily: 'Times New Roman', 
                 borderRadius: '8px',
                 margin: '8px',
+                marginTop:'150px',
                 cursor: 'pointer',
                 border: 'none',
                 padding: '10px 20px',
@@ -61,6 +62,7 @@ const StatisticsPage: React.FC<StatisticProps> = ({ totalBooksRead, avgRating, f
                 fontFamily: 'Times New Roman', 
                 borderRadius: '8px',
                 margin: '8px',
+                marginTop:'15px',
                 cursor: 'pointer',
                 border: 'none',
                 padding: '10px 20px',
@@ -70,51 +72,8 @@ const StatisticsPage: React.FC<StatisticProps> = ({ totalBooksRead, avgRating, f
                   color: '#f3e9dc',
                 }
               }}>
-                Olvasott könyvek értékelése
-              </Button>
-          </li>
-          <li style={{ marginBottom: '16px' }}>
-            <Button fullWidth variant="contained" onClick={() => setSelectedStat('authors')}
-              sx={{ 
-                backgroundColor: '#eae2ca', 
-                color: '#895737',
-                fontWeight: '600',
-                fontFamily: 'Times New Roman', 
-                borderRadius: '8px',
-                margin: '8px',
-                cursor: 'pointer',
-                border: 'none',
-                padding: '10px 20px',
-                transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
-                '&:hover': {
-                  backgroundColor: '#90784f', // Change background color on hover
-                  color: '#f3e9dc',
-                }
-              }}>
-              Kedvenc szerzők
-              </Button>
-          </li>
-          <li style={{ marginBottom: '16px' }}>
-            <Button fullWidth variant="contained" onClick={() => setSelectedStat('list')}
-              sx={{ 
-                backgroundColor: '#eae2ca', 
-                color: '#895737',
-                fontWeight: '600',
-                fontFamily: 'Times New Roman', 
-                borderRadius: '8px',
-                margin: '8px',
-                cursor: 'pointer',
-                border: 'none',
-                padding: '10px 20px',
-                transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
-                '&:hover': {
-                  backgroundColor: '#90784f', // Change background color on hover
-                  color: '#f3e9dc',
-                }
-              }}
-              >
                 Olvasott könyvek listája
-            </Button>
+              </Button>
           </li>
         </ul>
       </Box>

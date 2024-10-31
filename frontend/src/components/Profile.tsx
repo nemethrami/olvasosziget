@@ -49,6 +49,7 @@ const UserProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogGoalOpen, setGoalDialogOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [tabValue, setTabValue] = React.useState(0);
 
@@ -161,31 +162,22 @@ const UserProfile: React.FC = () => {
     setSelectedImage(null);
   };
 
+  const handleGoalDialogClose = () => {
+    setGoalDialogOpen(false);
+  };
+
   const handleGoalComplete = async (goalId: string) => {
-    console.log(goalId)
     await updateGoalAttributes(goalId, {
       is_done: true
     })
   }
 
-  const handleBookRead = async (goalId: string, idx: number) => {
-    let comp_books: number = -1;
-    let goal_am: number = -1;
-
-    setUnDoneGoalDatas((prevItems) =>
-      prevItems.map((item, index) => {
-          comp_books = item.completed_books + 1;
-          goal_am = item.goal_amount - 1;
-          return index === idx ? { ...item, completed_books: comp_books, goal_amount: goal_am } : item
-        }
-      )
-    );
-
-    if (comp_books === -1 || goal_am === -1) return;
+  const handleBookRead = async (goalId: string, goalAmount: number, completedBooks: number) => {
+    if (goalAmount <= 0) return;
 
     await updateGoalAttributes(goalId, {
-      completed_books: comp_books, 
-      goal_amount: goal_am
+      completed_books: completedBooks + 1, 
+      goal_amount: goalAmount - 1
     })
   };
 
@@ -289,7 +281,7 @@ const UserProfile: React.FC = () => {
   };
 
   const handleNewGoal = () => {
-    setDialogOpen(true);
+    setGoalDialogOpen(true);
   };
 
   const addNewGoal = async () => {
@@ -307,7 +299,10 @@ const UserProfile: React.FC = () => {
 
     await addDataToCollectionWithAutoID('goals', newGoal);
 
-    handleDialogClose();
+    handleGoalDialogClose();
+    setNewGoalName('');
+    setBookGoal(0);
+    setTargetDate('');
   }
 
   return (
@@ -536,7 +531,7 @@ const UserProfile: React.FC = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: '16px' }}>
                         <Button 
                           variant="contained" 
-                          onClick={() => handleBookRead(goalId, index)} 
+                          onClick={() => handleBookRead(goalId, goal.goal_amount, goal.completed_books)} 
                           sx={{ 
                             backgroundColor: '#eae2ca',  
                             color: '#895737', 
@@ -632,7 +627,7 @@ const UserProfile: React.FC = () => {
       </Dialog>
 
       {/* Dialog a cél létrehozásához */}
-      <Dialog open={dialogOpen} onClose={handleDialogClose}>
+      <Dialog open={dialogGoalOpen} onClose={handleGoalDialogClose}>
         <DialogTitle>Új olvasási cél létrehozása</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
@@ -665,7 +660,7 @@ const UserProfile: React.FC = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDialogClose}>Mégse</Button>
+          <Button onClick={handleGoalDialogClose}>Mégse</Button>
           <Button onClick={() => addNewGoal()}>Létrehozás</Button>
         </DialogActions>
       </Dialog>
