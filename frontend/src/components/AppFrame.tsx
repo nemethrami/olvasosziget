@@ -229,7 +229,7 @@ export default function AppFrame({children}: Props) {
         </List>
         <Divider sx={{ borderWidth: '1px', backgroundColor :'#895737', marginBottom:'8px' }} variant='middle' />
         <List>
-          {['Kilépés'].map((text) => (
+          {['Kijelentkezés'].map((text) => (
             <ListItem key={text} disablePadding sx={{ display: 'block' }}>
               <ListItemButton
                 sx={{
