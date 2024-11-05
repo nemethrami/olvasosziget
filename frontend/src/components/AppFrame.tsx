@@ -26,6 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { ReactNode } from 'react';
 import { getCurrentUserName, handleSignOut } from '../services/FirebaseService';
 import AvatarComponent from './AvatarComponent';
+import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 
 const drawerWidth = 240;
 
@@ -199,7 +200,7 @@ export default function AppFrame({children}: Props) {
         </DrawerHeader>
         <Divider sx={{ borderWidth: '1px', backgroundColor :'#895737', marginBottom:'8px' }} variant='middle'/>
         <List>
-          {['Főoldal', 'Profil', 'Követések', 'Chatszobák', 'Statisztika'].map((text, index) => (
+          {['Főoldal', 'Profil', 'Követések', 'Chatszobák', 'Statisztika', 'Felhasználók kezelése'].map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: 'block' }}>
               <ListItemButton
                 sx={{
@@ -218,7 +219,7 @@ export default function AppFrame({children}: Props) {
                   }}
                 >
                   {
-                    index % 5 === 0 ? <HomeOutlinedIcon /> : index % 5 === 1 ? <AccountCircleOutlinedIcon /> : index % 5 === 2 ? <PersonAddAltOutlinedIcon /> : index % 5 === 3 ? <MarkUnreadChatAltOutlinedIcon /> : <EqualizerOutlinedIcon />
+                    index % 6 === 0 ? <HomeOutlinedIcon /> : index % 6 === 1 ? <AccountCircleOutlinedIcon /> : index % 6 === 2 ? <PersonAddAltOutlinedIcon /> : index % 6 === 3 ? <MarkUnreadChatAltOutlinedIcon /> : index % 6 === 4 ? <EqualizerOutlinedIcon /> : <ManageAccountsOutlinedIcon />
                   }
                   
                 </ListItemIcon>
