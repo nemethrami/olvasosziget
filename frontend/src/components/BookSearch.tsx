@@ -154,7 +154,7 @@ function BookSearch() {
     return (
         <>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <form className='form' style={{ display: 'flex', width: '100%', maxWidth: '900px' }} >
+                <form className='form' style={{ display: 'flex', width: '100%', maxWidth: '900px', justifyContent: 'center' }} >
                     <TextField
                     label="Keresés"
                     variant="outlined"

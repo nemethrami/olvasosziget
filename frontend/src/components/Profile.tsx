@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, IconButton, Divider, List, ListItemText, ListItem, TextField, Rating, Tabs, Tab, DialogContent } from '@mui/material';
+import { Box, Checkbox, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, IconButton, Divider, List, ListItemText, ListItem, TextField, Rating, Tabs, Tab, DialogContent, Autocomplete, ListItemAvatar, Avatar, Stack } from '@mui/material';
 import { getStorageRef, getDocRef, getAvatarUrlByUserName, getCollectionByID, postLike, postDislike, getCurrentUserName, postComment, postCommentDelete, deleteDocDataByID, updateGoalAttributes, addDataToCollectionWithAutoID } from '../services/FirebaseService';
 import { getDownloadURL, uploadBytes } from 'firebase/storage';
 import { DocumentData, onSnapshot, QueryDocumentSnapshot, Timestamp, updateDoc } from 'firebase/firestore';
 import AvatarComponent from './AvatarComponent';
 import { useParams } from 'react-router-dom';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import DeleteIcon from '@mui/icons-material/Delete';
 import dayjs from 'dayjs';
 import edition_placeholder from '../assets/edition_placeholder.png'
 import { CommentModel } from '../models/ReviewModel';
@@ -14,7 +14,10 @@ import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined
 import CircularProgress, {
   CircularProgressProps,
 } from '@mui/material/CircularProgress';
-import { GoalModel } from '../models/GoalModel';
+import { GoalBooksModel, GoalModel } from '../models/GoalModel';
+import { BookModel } from '../models/BookModel';
+import axios from 'axios';
+import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
 
 function CircularProgressWithLabel(
   props: CircularProgressProps & { value: number },
@@ -45,11 +48,13 @@ function CircularProgressWithLabel(
 }
 
 const UserProfile: React.FC = () => {
+  const API_KEY = 'AIzaSyCZ0PamLM1OwHLSQ-qNab8hUhHGjGr0Bjs';
   const currentUserId: string | null = localStorage.getItem('uid');
   const { id } = useParams<{ id: string }>();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogGoalOpen, setGoalDialogOpen] = useState(false);
+  const [openSelectedDialog, setOpenSelectedDialog] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [tabValue, setTabValue] = React.useState(0);
 
@@ -59,11 +64,50 @@ const UserProfile: React.FC = () => {
 
   const [doneGoalDatas, setDoneGoalDatas] = useState<DocumentData[]>([]);
   const [unDoneGoalDatas, setUnDoneGoalDatas] = useState<DocumentData[]>([]);
+  const [expiredGoalDatas, setExpiredGoalDatas] = useState<DocumentData[]>([]);
   const [doneGoals, setDoneGoals] = useState<DocumentData[]>([]);
   const [unDoneGoals, setUnDoneGoals] = useState<DocumentData[]>([]);
+  const [expiredGoals, setExpiredGoals] = useState<DocumentData[]>([]);
   const [targetDate, setTargetDate] = useState<string>('');
   const [newGoalName, setNewGoalName] = useState<string>('');
-  const [bookGoal, setBookGoal] = useState<number>(0);
+  const [selectedBooks, setSelectedBooks] = useState<BookModel[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [options, setOptions] = useState<BookModel[]>([]);
+  const [currentGoal, setCurrentGoal] = useState<DocumentData | null>(null);
+  const [currentGoalId, setCurrentGoalId] = useState<string>('');
+
+  // Fetch books from Google Books API
+  const fetchBooks = async (query: string) => {
+    try {
+      const response = await axios.get('https://www.googleapis.com/books/v1/volumes', {
+        params: {
+          q: query,
+          key: API_KEY,
+          maxResults: 10,
+        },
+      });
+
+      setOptions(response.data.items || []);
+      console.log(options)
+    } catch (error) {
+      console.error("Error fetching data from Google Books API", error);
+    }
+  };
+
+  function handleOptionClick(event: React.ChangeEvent<HTMLInputElement>, selectedBook: BookModel | null) {
+    if (!selectedBook) return;
+
+    console.log(selectedBooks)
+    setSelectedBooks((prevList) => {
+      const exists = prevList.some(item => item.id === selectedBook.id);
+      return exists ? prevList : [...prevList, selectedBook];
+    });
+    setSearchQuery('');
+  }
+
+  function deleteListItem(id: string) {
+    setSelectedBooks((prevItems) => prevItems.filter(item => item.id !== id));
+  }
 
   useEffect(() => {
     // Set up the real-time listener
@@ -84,14 +128,17 @@ const UserProfile: React.FC = () => {
   useEffect(() => {
     // Set up the real-time listener
     const unsubscribe = onSnapshot(getCollectionByID('goals'), (querySnapshot) => {
+      const now = new Date();
       const filteredResult = querySnapshot.docs.filter(doc => doc.data().created_username === id);
       const data: DocumentData[] = filteredResult.map(doc => doc.data());
       const goals: QueryDocumentSnapshot<DocumentData, DocumentData>[] = filteredResult.sort((a, b) => b.data().created_at.toDate().getTime() - a.data().created_at.toDate().getTime())
       const goalDatas: DocumentData[] = data.sort((a, b) => b.created_at.toDate().getTime() - a.created_at.toDate().getTime())
       setDoneGoals(goals.filter((doc) => doc.data().is_done))
-      setUnDoneGoals(goals.filter((doc) => !doc.data().is_done))
+      setUnDoneGoals(goals.filter((doc) => !doc.data().is_done && doc.data().target_date.toDate() >= now))
       setDoneGoalDatas(goalDatas.filter((doc) => doc.is_done))
-      setUnDoneGoalDatas(goalDatas.filter((doc) => !doc.is_done))
+      setUnDoneGoalDatas(goalDatas.filter((doc) => !doc.is_done &&  doc.target_date.toDate() >= now))
+      setExpiredGoals(goals.filter((doc) => doc.data().target_date.toDate() < now))
+      setExpiredGoalDatas(goalDatas.filter((doc) => doc.target_date.toDate() < now))
     }, (error) => {
       console.error('Error fetching goal data:', error);
     });
@@ -166,19 +213,58 @@ const UserProfile: React.FC = () => {
     setGoalDialogOpen(false);
   };
 
+  const handleSelectedCloseDialog = () => {
+    setOpenSelectedDialog(false);
+  };
+
+  const handleSelectedOpenDialog = (goal: DocumentData, goalId: string) => {
+    setOpenSelectedDialog(true);
+    setCurrentGoal(goal);
+    setCurrentGoalId(goalId);
+  };
+
   const handleGoalComplete = async (goalId: string) => {
     await updateGoalAttributes(goalId, {
       is_done: true
     })
   }
 
-  const handleBookRead = async (goalId: string, goalAmount: number, completedBooks: number) => {
-    if (goalAmount <= 0) return;
+  const handleBookRead = async () => {
+    if (currentGoal.goal_amount < 0) return;
 
-    await updateGoalAttributes(goalId, {
-      completed_books: completedBooks + 1, 
-      goal_amount: goalAmount - 1
-    })
+    const { trueCount, falseCount } = currentGoal.books_to_read.reduce(
+      (acc: {trueCount: number; falseCount: number}, item: GoalBooksModel) => {
+        if (item.is_checked) {
+          acc.trueCount += 1;
+        } else {
+          acc.falseCount += 1;
+        }
+        return acc;
+      },
+      { trueCount: 0, falseCount: 0 }
+    );
+
+    await updateGoalAttributes(currentGoalId, {
+      completed_books: trueCount, 
+      goal_amount: falseCount
+    });
+
+    handleSelectedCloseDialog();
+  };
+
+  const handleBookReadSelect = async (event: React.ChangeEvent<HTMLInputElement>, goalBook: GoalBooksModel) => {
+    setCurrentGoal((prevState) => ({
+      ...prevState,
+      books_to_read: prevState.books_to_read.map((item: GoalBooksModel) =>
+        item.book === goalBook.book ? { ...item, is_checked: event.target.checked } : item
+      )
+    }));
+
+    const otherBooks: GoalBooksModel[] = currentGoal.books_to_read.filter((item: GoalBooksModel) => item.book !== goalBook.book);
+
+    await updateGoalAttributes(currentGoalId, {
+      books_to_read: [...otherBooks, {book: goalBook.book, is_checked: event.target.checked}]
+    });
   };
 
   const handleLike = async (idx: number, likes: string[], postId: string) => {
@@ -261,8 +347,6 @@ const UserProfile: React.FC = () => {
   };
 
   const handleDeleteDoneGoal = async (idx: number, goalId: string) => {
-    console.log(goalId)
-
     setDoneGoalDatas((prevItems) =>
       prevItems.filter((item, index) => index !== idx)
     );
@@ -271,9 +355,15 @@ const UserProfile: React.FC = () => {
   };
 
   const handleDeleteUnDoneGoal = async (idx: number, goalId: string) => {
-    console.log(goalId)
-
     setUnDoneGoalDatas((prevItems) =>
+      prevItems.filter((item, index) => index !== idx)
+    );
+
+    await deleteDocDataByID('goals', goalId);
+  };
+
+  const handleDeleteExpiredGoal = async (idx: number, goalId: string) => {
+    setExpiredGoalDatas((prevItems) =>
       prevItems.filter((item, index) => index !== idx)
     );
 
@@ -286,35 +376,44 @@ const UserProfile: React.FC = () => {
 
   const addNewGoal = async () => {
     const currentUserName: string = await getCurrentUserName();
+    const dateObject = new Date(targetDate);
+    const booksToRead: GoalBooksModel[] = selectedBooks.map((book: BookModel) => ({
+      book: book,
+      is_checked: false
+    }));
 
     const newGoal: GoalModel = {
       created_at: Timestamp.now(),
       created_uid: currentUserId,
       created_username: currentUserName,
-      goal_amount: bookGoal,
+      goal_amount: selectedBooks.length,
       goal_name: newGoalName,
       completed_books: 0,
-      is_done: false
+      is_done: false,
+      target_date: Timestamp.fromDate(dateObject),
+      books_to_read: booksToRead
     }
 
     await addDataToCollectionWithAutoID('goals', newGoal);
 
     handleGoalDialogClose();
     setNewGoalName('');
-    setBookGoal(0);
     setTargetDate('');
   }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ marginBottom: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: '100px' }}>
-        <Box>
-          <AvatarComponent
-            sx={{ width: 80, height: 80, margin: '13px auto', cursor: 'pointer' }} 
-            onClick={handleDialogOpen}
-            aUrl={avatarUrl}
-          />
-          <Typography variant="h6" align="center" sx={{ color: 'black' }}>@{id}</Typography>
+      <Box>
+          <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
+            <AvatarComponent
+              sx={{ width: 80, height: 80, cursor: 'pointer' }}
+              onClick={handleDialogOpen}
+              aUrl={avatarUrl}
+            />
+            <Typography variant="h6" sx={{ color: 'black' }}>@{id}</Typography>
+            <FlagOutlinedIcon sx={{color: 'black'}}/>
+          </Stack>
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black' }}>
@@ -389,11 +488,6 @@ const UserProfile: React.FC = () => {
                     value={post.text}
                     disabled
                     multiline
-                    InputProps={{
-                      style: {
-                        height: document.getElementById(`thumbnail-img-${postId}`)?.clientHeight || 'auto',
-                      },
-                    }}
                     sx={{
                       marginLeft: '10px',
                       alignItems: 'flex-start',
@@ -409,8 +503,11 @@ const UserProfile: React.FC = () => {
                   {dayjs(post.created_at.toDate()).format('YYYY.MM.DD - HH:mm:ss')}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', marginTop: 1 }}>
-                  <IconButton onClick={() => post.likes.includes(currentUserId) ? handleDislike(index, post.likes, postId) : handleLike(index, post.likes, postId)}>
-                    {post.likes.includes(currentUserId) ? <ThumbDownIcon /> : <ThumbUpIcon />}
+                  <IconButton 
+                    onClick={() => post.likes.includes(currentUserId) ? handleDislike(index, post.likes, postId) : handleLike(index, post.likes, postId)}
+                    sx={{ color: post.likes.includes(currentUserId) ? 'blue' : 'grey' }}
+                  >
+                    <ThumbUpIcon />
                   </IconButton>
                   <Typography variant="body2">{post.likes.length} likes</Typography>
                 </Box>
@@ -460,13 +557,13 @@ const UserProfile: React.FC = () => {
       {tabValue === 1 && (
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexDirection: 'column', width: '100%' }}>
           <Box sx={{ display: 'flex', width: '100%' }} gap={5}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', width: '42%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '33%' }}>
               <Typography variant="h6" sx={{ 
                 color: '#895737',
                 fontWeight: '600',
                 fontFamily: 'Times New Roman',  
                 marginBottom: 1, // Opció: margó a célok oszlop és a cím között
-                marginRight: '20px'
+                marginRight: '15px'
               }}>
                 Elkezdett célok
               </Typography>
@@ -490,82 +587,98 @@ const UserProfile: React.FC = () => {
                 + Új cél
               </Button>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'center', width: '42%' }}>
-              <Typography variant="h6" sx={{
-                  color: '#895737',
-                  fontWeight: '600',
-                  fontFamily: 'Times New Roman', 
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '33%' }}>
+            <Typography variant="h6" sx={{ 
+                color: '#895737',
+                fontWeight: '600',
+                fontFamily: 'Times New Roman',  
+                marginBottom: 1, // Opció: margó a célok oszlop és a cím között
+                marginRight: '15px'
               }}>
                 Befejezett célok
               </Typography>
             </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '33%' }}>
+            <Typography variant="h6" sx={{ 
+                color: '#895737',
+                fontWeight: '600',
+                fontFamily: 'Times New Roman',  
+                marginBottom: 1, // Opció: margó a célok oszlop és a cím között
+                marginRight: '15px'
+              }}>
+                Elbukott célok
+              </Typography>
+            </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%' }} gap={5}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%' }} gap={3}>
             {/* Elkezdett célok cím */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', width: '42%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', width: '33%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
               {unDoneGoalDatas.map((goal, index) => {
                 const goalId = unDoneGoals[index].id;
 
                 return (
-                <Paper sx={{ padding: 2, marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                <Paper sx={{ padding: 2, width:'100%', marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
+                  <Box sx={{ display: 'flex', flexDirection:'column', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                       <Box sx={{display:'flex', flexDirection:'row', width:'100%'}}>
                         <Box sx={{display:'flex', width:'50%', flexDirection:'column', marginRight:'auto',}}>
-                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
                             Célnév: {goal.goal_name}
                           </Typography>
-                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
                             Elolvasandó könyvek száma: {goal.goal_amount}
                           </Typography>
-                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
                             Elolvasott könyvek száma: {goal.completed_books}
                           </Typography>
                         </Box>
-                        <Box sx={{display:'flex', width:'50%', justifyContent:'center', alignItems:'center'}}>
+                        <Box sx={{display:'flex', justifyContent:'flex-end', alignItems:'center'}}>
                           <CircularProgressWithLabel value={(goal.completed_books / (goal.goal_amount + goal.completed_books)) * 100} />
                         </Box>
                       </Box>
                       <Divider sx={{ borderWidth: '1px', backgroundColor: '#895737', margin: '8px 0' }} variant='middle' />
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: '16px' }}>
-                        <Button 
-                          variant="contained" 
-                          onClick={() => handleBookRead(goalId, goal.goal_amount, goal.completed_books)} 
-                          sx={{ 
-                            backgroundColor: '#eae2ca',  
-                            color: '#895737', 
-                            width:'190px', 
-                            transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
-                            '&:hover': {
-                              backgroundColor: '#90784f', // Change background color on hover
-                              color: '#f3e9dc',
-                            } }}
-                        >
-                          + Könyv elolvasva
-                        </Button>
-                        <Button 
-                          variant="contained" 
-                          onClick={() => handleGoalComplete(goalId)} 
-                          sx={{ 
-                            backgroundColor: '#eae2ca',  
-                            color: '#895737', 
-                            width:'190px', 
-                            transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
-                            '&:hover': {
-                              backgroundColor: '#90784f', // Change background color on hover
-                              color: '#f3e9dc',
-                            } }}
-                          disabled={goal.goal_amount !== 0}
-                        >
-                          Cél befejezése
-                        </Button>
-                        <IconButton onClick={() => handleDeleteUnDoneGoal(index, goalId)} sx={{ marginRight:'10px' }}>
-                          <DeleteForeverOutlinedIcon/>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: '16px', width: '100%' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}> {/* Új oszlopirányú box a gombokhoz */}
+                          <Button 
+                            variant="contained" 
+                            onClick={() => handleSelectedOpenDialog(goal, goalId)} 
+                            sx={{ 
+                              backgroundColor: '#eae2ca',  
+                              color: '#895737', 
+                              width: '95%',  // Gomb szélessége kitölti az oszlopot
+                              height: '35px',
+                              transition: 'background-color 0.8s ease',
+                              '&:hover': {
+                                backgroundColor: '#90784f',
+                                color: '#f3e9dc',
+                              }
+                            }}
+                          >
+                            + Könyv elolvasva
+                          </Button>
+                          <Button 
+                            variant="contained" 
+                            onClick={() => handleGoalComplete(goalId)} 
+                            sx={{ 
+                              backgroundColor: '#eae2ca',  
+                              color: '#895737', 
+                              width: '95%',  // Gomb szélessége kitölti az oszlopot
+                              height: '35px',
+                              transition: 'background-color 0.8s ease',
+                              '&:hover': {
+                                backgroundColor: '#90784f',
+                                color: '#f3e9dc',
+                              }
+                            }}
+                            disabled={goal.goal_amount !== 0}
+                          >
+                            Cél befejezése
+                          </Button>
+                        </Box>
+                        <IconButton onClick={() => handleDeleteUnDoneGoal(index, goalId)}>
+                          <DeleteForeverOutlinedIcon />
                         </IconButton>
                       </Box>
-                    </Box>
-
                   </Box>
                 </Paper>
 
@@ -574,12 +687,12 @@ const UserProfile: React.FC = () => {
             </Box>
 
             {/* Completed Goals Column */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', width: '42%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', width: '33%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
               {doneGoalDatas.map((goal, index) => {
                 const goalId = doneGoals[index].id;
 
                 return (
-                  <Paper sx={{ padding: 2, marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
+                  <Paper sx={{ padding: 2, width:'100%', marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                         <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
@@ -588,9 +701,32 @@ const UserProfile: React.FC = () => {
                         <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
                           Elolvasott könyvek száma: {goal.completed_books}
                         </Typography>
-                        <Divider sx={{ borderWidth: '1px', backgroundColor :'#895737', marginBottom:'8px' }} variant='middle' />
                       </Box>
                       <IconButton onClick={() => handleDeleteDoneGoal(index, goalId)} sx={{ marginLeft: 'auto' }}>
+                        <DeleteForeverOutlinedIcon />
+                      </IconButton>
+                    </Box>
+                  </Paper>
+                );
+              })}
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', width: '33%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
+              {expiredGoalDatas.map((goal, index) => {
+                const goalId = expiredGoals[index].id;
+
+                return (
+                  <Paper sx={{ padding: 2, width:'100%', marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                          Célnév: {goal.goal_name}
+                        </Typography>
+                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                          Elolvasott könyvek száma: {goal.completed_books}
+                        </Typography>
+                      </Box>
+                      <IconButton onClick={() => handleDeleteExpiredGoal(index, goalId)} sx={{ marginLeft: 'auto' }}>
                         <DeleteForeverOutlinedIcon />
                       </IconButton>
                     </Box>
@@ -627,18 +763,16 @@ const UserProfile: React.FC = () => {
       </Dialog>
 
       {/* Dialog a cél létrehozásához */}
-      <Dialog open={dialogGoalOpen} onClose={handleGoalDialogClose}>
-        <DialogTitle>Új olvasási cél létrehozása</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+      <Dialog open={dialogGoalOpen} onClose={() => setGoalDialogOpen(false)}>
+      <DialogTitle>Új olvasási cél létrehozása</DialogTitle>
+      <DialogContent>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <TextField
               label="Nevezd el a célodat"
-              type="text"
               value={newGoalName}
               onChange={(e) => setNewGoalName(e.target.value)}
               fullWidth
               sx={{ margin: '10px' }}
-              InputLabelProps={{ shrink: true }}
             />
             <TextField
               label="Cél dátuma"
@@ -649,19 +783,104 @@ const UserProfile: React.FC = () => {
               sx={{ margin: '10px' }}
               InputLabelProps={{ shrink: true }}
             />
-            <TextField
-              label="Könyvek száma"
-              type="number"
-              value={bookGoal}
-              onChange={(e) => setBookGoal(Number(e.target.value))}
+            <Autocomplete
+              options={options}
+              getOptionLabel={(option) => `${option.volumeInfo.authors}: ${option.volumeInfo.title}`}
+              inputValue={searchQuery}
+              onInputChange={(event, newInputValue) => {
+                setSearchQuery(newInputValue);
+                if (newInputValue) {
+                  fetchBooks(newInputValue);
+                } else {
+                  setOptions([]); // Clear options if the input is empty
+                }
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Search for books" variant="outlined" />
+              )}
+              renderOption={(props, option) => (
+                <li {...props} key={option.id}> {/* Use a unique key here */}
+                  {`${option.volumeInfo.authors}: ${option.volumeInfo.title}`}
+                </li>
+              )}
+              open={searchQuery !== '' && options.length > 0} // Only open if there are results and input is not empty
+              onChange={handleOptionClick}
+              sx={{}}
               fullWidth
-              sx={{ margin: '10px' }}
             />
+            <List dense={false}>
+              {selectedBooks.map((item) => (
+                <ListItem 
+                  key={item.id}
+                  secondaryAction={
+                    <IconButton edge="end" aria-label="delete" onClick={() => deleteListItem(item.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  }
+                >
+                  <ListItemAvatar>
+                    <Avatar>
+                      <img 
+                        src={item.volumeInfo.imageLinks?.thumbnail.replace('http://', 'https://') || edition_placeholder} 
+                        alt="Book thumbnail"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }} 
+                      />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={`${item.volumeInfo.authors}: ${item.volumeInfo.title}`}
+                  />
+                </ListItem>
+              ))}
+            </List>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleGoalDialogClose}>Mégse</Button>
-          <Button onClick={() => addNewGoal()}>Létrehozás</Button>
+          <Button onClick={() => setGoalDialogOpen(false)}>Mégse</Button>
+          <Button onClick={addNewGoal}>Létrehozás</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog megjelenítése a `books_to_read` listával */}
+      <Dialog open={openSelectedDialog} onClose={handleSelectedCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Elolvasandó Könyvek</DialogTitle>
+        <DialogContent>
+          <List>
+            {currentGoal && currentGoal.books_to_read.map((goalBook: GoalBooksModel) => (
+              <ListItem key={goalBook.book.id}>
+                <Checkbox
+                  checked={goalBook.is_checked}
+                  onChange={(e) => handleBookReadSelect(e, goalBook)}
+                />
+                <ListItemAvatar>
+                    <Avatar>
+                      <img 
+                        src={goalBook.book.volumeInfo.imageLinks?.thumbnail.replace('http://', 'https://') || edition_placeholder} 
+                        alt="Book thumbnail"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }} 
+                      />
+                    </Avatar>
+                  </ListItemAvatar>
+                <ListItemText primary={`${goalBook.book.volumeInfo.authors}: ${goalBook.book.volumeInfo.title}`} />
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSelectedCloseDialog} color="primary">
+            Bezár
+          </Button>
+          <Button onClick={handleBookRead} color="primary">
+            Mentés
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
