@@ -118,6 +118,7 @@ function RegistrationComponent() {
                 <Grid item xs={6}>
                     <TextField
                         required
+                        data-cy='lastname'
                         id="lastname"
                         label="Vezetéknév"
                         sx={{ gridColumn: 'span 1' }}
@@ -130,6 +131,7 @@ function RegistrationComponent() {
                 <Grid item xs={6}>
                     <TextField
                         required
+                        data-cy='firstname'
                         id="firstname"
                         label="Keresztnév"
                         sx={{ gridColumn: 'span 1' }}
@@ -142,6 +144,7 @@ function RegistrationComponent() {
                 <Grid item xs={6}>
                     <TextField
                         required
+                        data-cy='username'
                         id="username"
                         label="Felhasználónév "
                         sx={{ gridColumn: 'span 1' }}
@@ -154,6 +157,7 @@ function RegistrationComponent() {
                 <Grid item xs={6}>
                     <TextField
                         required
+                        data-cy='email'
                         id="email"
                         label="E-mail cím"
                         sx={{ gridColumn: 'span 1' }}
@@ -167,6 +171,7 @@ function RegistrationComponent() {
                     <FormControl required variant="outlined" fullWidth>
                         <InputLabel htmlFor="password">Jelszó</InputLabel>
                         <OutlinedInput
+                            data-cy='password'
                             id="password"
                             fullWidth
                             type={showPassword ? 'text' : 'password'}
@@ -193,6 +198,7 @@ function RegistrationComponent() {
                     <FormControl required variant="outlined" fullWidth>
                         <InputLabel htmlFor="passwordagain">Jelszó megerősítése</InputLabel>
                         <OutlinedInput
+                            data-cy='passwordagain'
                             id="passwordagain"
                             fullWidth
                             type={showPassword ? 'text' : 'password'}
@@ -221,12 +227,13 @@ function RegistrationComponent() {
                     <RadioGroup
                         aria-labelledby="radio-buttons-group"
                         name="controlled-radio-buttons-group"
+                        data-cy='gender'
                         value={gender}
                         onChange={(e) => setGender(e.target.value)}
                         sx={{ flexDirection: 'row' }}
                     >
-                        <FormControlLabel value="female" control={<Radio />} sx={{color:'#895737'}} label="Nő" />
-                        <FormControlLabel value="male" control={<Radio />} sx={{color:'#895737', marginLeft:'10px'}} label="Férfi" />
+                        <FormControlLabel value="female" data-cy='gender-female' control={<Radio />} sx={{color:'#895737'}} label="Nő" />
+                        <FormControlLabel value="male" data-cy='gender-male' control={<Radio />} sx={{color:'#895737', marginLeft:'10px'}} label="Férfi" />
                     </RadioGroup>
                 </FormControl>
                 </Grid>
@@ -245,6 +252,7 @@ function RegistrationComponent() {
                     <Button 
                         variant="outlined" 
                         onClick={handleRegistration} 
+                        data-cy='register'
                         sx={{
                             display: 'block', // A gomb blokk szintű elem lesz
                             margin: '0 auto', // Középre igazítja vízszintesen
@@ -269,7 +277,7 @@ function RegistrationComponent() {
                 </Grid>
             </Grid>
             {error && (
-                <Typography sx={{color:'red', marginTop:'8px'}}> {error} </Typography>
+                <Typography data-cy='error' sx={{color:'red', marginTop:'8px'}}> {error} </Typography>
             )} 
         </Box>
         </>

@@ -54,7 +54,7 @@ function App() {
         <Route path="/mainhome" element={<MainHome />} />
         <Route path="/home" element={user ? <Home /> : <Navigate to="/mainhome" replace />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/registration" element={!user ? <Registration /> : <Navigate to="/home" replace />} />
+        <Route path="/registration" element={<Registration />} />
         <Route path="/follow" element={user ? <FollowPage /> : <Navigate to="/mainhome" replace />} />
         <Route path="/chatrooms" element={user ? <ChatRoomsPage /> : <Navigate to="/mainhome" replace />} />
         <Route path="/statistics" element={user ? <Statistics /> : <Navigate to="/mainhome" replace />} />
