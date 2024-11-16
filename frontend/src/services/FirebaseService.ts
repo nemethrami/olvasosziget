@@ -25,10 +25,10 @@ export async function defaultSignIn(email: string, password: string) {
     return await signInWithEmailAndPassword(auth, email, password);
 }
 
-export function handleSignOut () {
+export async function handleSignOut () {
     localStorage.removeItem('avatarUrl');
     localStorage.removeItem('uid');
-    auth.signOut();
+    await auth.signOut();
 }
 
 export function getCollectionByID (collection_name: string): CollectionReference<DocumentData, DocumentData> {
@@ -70,6 +70,15 @@ export async function getDocData (collection_name: string, id: string) {
     const docRef: DocumentReference<DocumentData, DocumentData> = doc(db, collection_name, id);
     const docSnap: DocumentSnapshot<DocumentData, DocumentData> = await getDoc(docRef);
     return docSnap.exists() ? docSnap.data() : null;
+}
+
+export async function isUserAdmin () {
+    const currentUserId: string | null = localStorage.getItem('uid');
+
+    if (!currentUserId) return;
+    
+    const userData: DocumentData = await getDocData('users', currentUserId);
+    return userData.is_admin;
 }
 
 export async function addDataToCollectionWithAutoID (collection_name: string, data: Record<string, unknown>) {
@@ -154,6 +163,10 @@ export async function postCommentDelete(postId: string, value: CommentModel) {
 
 export async function updateGoalAttributes(goalId: string, attributes: Record<string, unknown>) {
     await updateDoc(getDocRef('goals', goalId), attributes);
+}
+
+export async function updateDocAttributes(collectionName: string, docId: string, attributes: Record<string, unknown>) {
+    await updateDoc(getDocRef(collectionName, docId), attributes);
 }
 
 export async function getUidByUserName(userName: string) {

@@ -24,7 +24,7 @@ import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined
 import ExitToAppOutlinedIcon from '@mui/icons-material/ExitToAppOutlined';
 import { useNavigate } from 'react-router-dom';
 import { ReactNode } from 'react';
-import { getCurrentUserName, handleSignOut } from '../services/FirebaseService';
+import { getCurrentUserName, handleSignOut, isUserAdmin } from '../services/FirebaseService';
 import AvatarComponent from './AvatarComponent';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 
@@ -122,6 +122,7 @@ export default function AppFrame({children}: Props) {
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
   const [currentUserName, setCurrentUserName] = React.useState<string>('');
+  const [isAdmin, setIsAdmin] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     const fetchUserName = async () => {
@@ -130,7 +131,14 @@ export default function AppFrame({children}: Props) {
       setCurrentUserName(userName);
     }
 
+    const fetchIsAdmin = async () => {
+      const admin: boolean = await isUserAdmin()
+      //const userName: string = await Promise.resolve('test_user_name');
+      setIsAdmin(admin);
+    }
+
     fetchUserName();
+    fetchIsAdmin();
   }, []);
 
   const handleDrawerOpen = () => {
@@ -141,8 +149,8 @@ export default function AppFrame({children}: Props) {
     setOpen(false);
   };
 
-  const handleLogOut = () => {
-    handleSignOut();
+  const handleLogOut = async () => {
+    await handleSignOut();
     navigate('/mainhome')
   };
 
@@ -164,6 +172,10 @@ export default function AppFrame({children}: Props) {
 
   const handleStatistic = () => {
     navigate('/statistics')
+  };
+
+  const handleAdmin = () => {
+    navigate('/admin')
   };
 
   return (
@@ -199,8 +211,8 @@ export default function AppFrame({children}: Props) {
           </IconButton>
         </DrawerHeader>
         <Divider sx={{ borderWidth: '1px', backgroundColor :'#895737', marginBottom:'8px' }} variant='middle'/>
-        <List>
-          {['Főoldal', 'Profil', 'Követések', 'Chatszobák', 'Statisztika', 'Felhasználók kezelése'].map((text, index) => (
+        <List sx={{paddingBottom: '0px'}}>
+          {['Főoldal', 'Profil', 'Követések', 'Chatszobák', 'Statisztika'].map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: 'block' }}>
               <ListItemButton
                 sx={{
@@ -219,7 +231,7 @@ export default function AppFrame({children}: Props) {
                   }}
                 >
                   {
-                    index % 6 === 0 ? <HomeOutlinedIcon /> : index % 6 === 1 ? <AccountCircleOutlinedIcon /> : index % 6 === 2 ? <PersonAddAltOutlinedIcon /> : index % 6 === 3 ? <MarkUnreadChatAltOutlinedIcon /> : index % 6 === 4 ? <EqualizerOutlinedIcon /> : <ManageAccountsOutlinedIcon />
+                    index % 5 === 0 ? <HomeOutlinedIcon /> : index % 5 === 1 ? <AccountCircleOutlinedIcon /> : index % 5 === 2 ? <PersonAddAltOutlinedIcon /> : index % 5 === 3 ? <MarkUnreadChatAltOutlinedIcon /> :  <EqualizerOutlinedIcon />
                   }
                   
                 </ListItemIcon>
@@ -228,6 +240,35 @@ export default function AppFrame({children}: Props) {
             </ListItem>
           ))}
         </List>
+        {isAdmin && (
+          <List sx={{paddingTop: '0px'}}>
+            {['Felhasználók kezelése'].map((text) => (
+              <ListItem key={text} disablePadding sx={{ display: 'block' }}>
+                <ListItemButton
+                  sx={{
+                    minHeight: 48,
+                    justifyContent: open ? 'initial' : 'center',
+                    px: 2.5,
+                  }}
+                  onClick={handleAdmin}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: open ? 3 : 'auto',
+                      justifyContent: 'center',
+                      color: '#895737'
+                    }}
+                  >
+                    {<ManageAccountsOutlinedIcon />}
+                  </ListItemIcon>
+                  <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        )}
+        
         <Divider sx={{ borderWidth: '1px', backgroundColor :'#895737', marginBottom:'8px' }} variant='middle' />
         <List>
           {['Kijelentkezés'].map((text) => (
