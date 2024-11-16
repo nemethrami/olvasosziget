@@ -83,6 +83,7 @@ function RegistrationComponent() {
                 avatar_url: '',
                 followers: [],
                 following: [],
+                is_admin: false
             }
 
             await addDataToCollection('users', user.uid, userData);

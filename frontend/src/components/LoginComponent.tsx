@@ -10,7 +10,7 @@ import * as React from 'react';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import { useNavigate, Link } from 'react-router-dom';
-import { addDataToCollection, defaultSignIn, getDocData, googleSignIn } from '../services/FirebaseService';
+import { addDataToCollection, defaultSignIn, getDocData, googleSignIn, handleSignOut } from '../services/FirebaseService';
 import { Grid, Typography } from '@mui/material';
 import googleLogo from '../assets/Google__G__logo.svg.png';
 
@@ -33,10 +33,23 @@ function LoginComponent() {
         event.preventDefault();
     };
 
+    const checkIfUserBanned = async (uid: string) => {
+        const bannedData = await getDocData('banned', uid);
+        return bannedData ? true : false;
+    };
+
     const signInWithEmailPw = async () => {
         setErrorMsg('');
         try {
-            await defaultSignIn(email, password);
+            const result = await defaultSignIn(email, password);
+            const isBanned = await checkIfUserBanned(result.user.uid);
+
+            if (isBanned) {
+                await handleSignOut();
+                setErrorMsg('A felhasználói fiók letiltásra került.');
+                return;
+            }
+
             navigate('/home');
         } catch (error) {
             setErrorMsg(`Error during sign-in: ${error}`);
@@ -47,6 +60,14 @@ function LoginComponent() {
         setErrorMsg('');
         try {
             const result = await googleSignIn();
+            const isBanned = await checkIfUserBanned(result.user.uid);
+
+            if (isBanned) {
+                await handleSignOut();
+                setErrorMsg('A felhasználói fiók letiltásra került.');
+                return;
+            }
+
             const docData = await getDocData('users', result.user.uid);
 
             if (docData) {
@@ -66,6 +87,7 @@ function LoginComponent() {
                 avatar_url: result.user.photoURL ?? '',
                 followers: [],
                 following: [],
+                is_admin: false
             }
             
             await addDataToCollection('users', result.user.uid, userData);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Checkbox, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, IconButton, Divider, List, ListItemText, ListItem, TextField, Rating, Tabs, Tab, DialogContent, Autocomplete, ListItemAvatar, Avatar, Stack } from '@mui/material';
-import { getStorageRef, getDocRef, getAvatarUrlByUserName, getCollectionByID, postLike, postDislike, getCurrentUserName, postComment, postCommentDelete, deleteDocDataByID, updateGoalAttributes, addDataToCollectionWithAutoID } from '../services/FirebaseService';
+import { Box, Checkbox, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, IconButton, Divider, List, ListItemText, ListItem, TextField, Rating, Tabs, Tab, DialogContent, Autocomplete, ListItemAvatar, Avatar, Stack, RadioGroup, Radio, FormControlLabel } from '@mui/material';
+import { getStorageRef, getDocRef, getAvatarUrlByUserName, getCollectionByID, postLike, postDislike, getCurrentUserName, postComment, postCommentDelete, deleteDocDataByID, updateGoalAttributes, addDataToCollectionWithAutoID, isUserAdmin, getUidByUserName } from '../services/FirebaseService';
 import { getDownloadURL, uploadBytes } from 'firebase/storage';
 import { DocumentData, onSnapshot, QueryDocumentSnapshot, Timestamp, updateDoc } from 'firebase/firestore';
 import AvatarComponent from './AvatarComponent';
@@ -18,6 +18,7 @@ import { GoalBooksModel, GoalModel } from '../models/GoalModel';
 import { BookModel } from '../models/BookModel';
 import axios from 'axios';
 import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
+import { ReportModel } from '../models/ReportModel';
 
 function CircularProgressWithLabel(
   props: CircularProgressProps & { value: number },
@@ -55,6 +56,8 @@ const UserProfile: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogGoalOpen, setGoalDialogOpen] = useState(false);
   const [openSelectedDialog, setOpenSelectedDialog] = useState(false);
+  const [openReportDialog, setOpenReportDialog] = useState(false);
+  const [openReportReviewDialog, setOpenReportReviewDialog] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [tabValue, setTabValue] = React.useState(0);
 
@@ -75,6 +78,28 @@ const UserProfile: React.FC = () => {
   const [options, setOptions] = useState<BookModel[]>([]);
   const [currentGoal, setCurrentGoal] = useState<DocumentData | null>(null);
   const [currentGoalId, setCurrentGoalId] = useState<string>('');
+  const [currentPostId, setCurrentPostId] = useState<string | null>(null);
+  const [currentComment, setCurrentComment] = useState<CommentModel | null>(null);
+  const [isReview, setIsReview] = useState<boolean>(false);
+
+  const [reportReason, setReportReason] = useState<'spam' | 'offensive' | 'risk' | 'behaviour' | 'other'>('behaviour');
+ 
+  const [isAdmin, setIsAdmin] = React.useState<boolean>(false);
+  const [currentUserName, setCurrentUserName] = React.useState<string>('');
+  const [textInput, setTextInput] = useState('');
+  const [error, setError] = useState(false);
+
+  React.useEffect(() => {
+    const fetchIsAdmin = async () => {
+      const admin: boolean = await isUserAdmin();
+      const uName: string = await getCurrentUserName();
+      //const userName: string = await Promise.resolve('test_user_name');
+      setIsAdmin(admin);
+      setCurrentUserName(uName);
+    }
+
+    fetchIsAdmin();
+  }, []);
 
   // Fetch books from Google Books API
   const fetchBooks = async (query: string) => {
@@ -217,6 +242,77 @@ const UserProfile: React.FC = () => {
     setOpenSelectedDialog(false);
   };
 
+  const handleReportCloseDialog = () => {
+    setOpenReportDialog(false);
+  };
+
+  const sendReport = async () => {
+    const uidOfProfile: string = await getUidByUserName(id);
+    if (!currentUserId && !uidOfProfile) return;
+
+    if (textInput.trim() === '') {
+      setError(true);
+      return;
+    }
+
+    const reportObj: ReportModel = {
+      created_uid: currentUserId,
+      created_at: Timestamp.now(),
+      content_type: 'user',
+      reason: reportReason,
+      explanation: textInput,
+      reported_content: uidOfProfile,
+    }
+
+    await addDataToCollectionWithAutoID('reports', reportObj);
+    handleReportCloseDialog();
+    setTextInput('');
+  }
+
+  function handleReportReviewCloseDialog() {
+    setOpenReportReviewDialog(false);
+  }
+
+  function handleReviewOpenDialog(postId: string, content_type: string, comment: CommentModel | null = null) {
+    setOpenReportReviewDialog(true);
+    setCurrentPostId(postId)
+    setIsReview(content_type === 'review' ? true : false)
+    if (comment) {
+      setCurrentComment(comment);
+    }
+  }
+
+  async function sendReportReview() {
+    if (!currentUserId || !currentPostId) return;
+
+    if (textInput.trim() === '') {
+      setError(true);
+      return;
+    }
+
+    const reportObj: ReportModel = {
+      created_uid: currentUserId,
+      created_at: Timestamp.now(),
+      content_type: 'review',
+      reason: reportReason,
+      explanation: textInput,
+      reported_content: currentPostId,
+    };
+
+    if (!isReview) {
+      reportObj['content_type'] = 'comment';
+      reportObj['comment'] = {
+        created_at: currentComment.created_at,
+        text: currentComment.text,
+        username: currentComment.username,
+      };
+    }
+
+    await addDataToCollectionWithAutoID('reports', reportObj);
+    handleReportReviewCloseDialog();
+    setTextInput('');
+  }
+
   const handleSelectedOpenDialog = (goal: DocumentData, goalId: string) => {
     setOpenSelectedDialog(true);
     setCurrentGoal(goal);
@@ -296,7 +392,6 @@ const UserProfile: React.FC = () => {
   };
 
   const handleAddComment = async (idx: number, comments: CommentModel[], newComment: string, postId: string) => {
-    const currentUserName: string = await getCurrentUserName();
     const newValue: CommentModel[] = [...comments, {username: currentUserName, text: newComment, created_at: Timestamp.now()}]
 
     setPostDatas((prevItems) =>
@@ -375,7 +470,6 @@ const UserProfile: React.FC = () => {
   };
 
   const addNewGoal = async () => {
-    const currentUserName: string = await getCurrentUserName();
     const dateObject = new Date(targetDate);
     const booksToRead: GoalBooksModel[] = selectedBooks.map((book: BookModel) => ({
       book: book,
@@ -412,7 +506,9 @@ const UserProfile: React.FC = () => {
               aUrl={avatarUrl}
             />
             <Typography variant="h6" sx={{ color: 'black' }}>@{id}</Typography>
-            <FlagOutlinedIcon sx={{color: 'black'}}/>
+            <IconButton onClick={() => setOpenReportDialog(true)}>
+              <FlagOutlinedIcon sx={{color: 'black'}}/>
+            </IconButton>
           </Stack>
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -462,17 +558,21 @@ const UserProfile: React.FC = () => {
             const postId = posts[index].id;
 
             return (
-              <Paper sx={{ padding: 2, marginBottom: 2, width: '90%', maxWidth: '1500px', overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all' }} key={postId}>
+              <Paper 
+                sx={{ padding: 2, marginBottom: 2, width: '90%', maxWidth: '1500px', overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all' }} 
+                key={postId}
+              >
                 <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: 2 }}>
                   <Typography variant="body1" gutterBottom sx={{ marginRight: 'auto' }}>
                     {post.book.volumeInfo.title}
                   </Typography>
-                  <Typography variant="body1" gutterBottom sx={{ marginRight: '10px' }}>
-                    Rating: 
-                  </Typography>
-                  <Rating name="read-only" value={post.rating} readOnly />
-                  <IconButton onClick={() => {handleDeletePost(index, postId)}}>
-                    <DeleteForeverOutlinedIcon />
+                  {(isAdmin || currentUserId === post.created_uid) && (
+                    <IconButton onClick={() => {handleDeletePost(index, postId)}} sx={{ alignItems: 'start' }}>
+                      <DeleteForeverOutlinedIcon />
+                    </IconButton>
+                  )}
+                  <IconButton onClick={() => handleReviewOpenDialog(postId, 'review')}>
+                    <FlagOutlinedIcon sx={{color: 'black'}}/>
                   </IconButton>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-start', width: '100%' }}>
@@ -483,21 +583,29 @@ const UserProfile: React.FC = () => {
                       style={{ width: '10%', height: 'auto' }}
                       id={`thumbnail-img-${postId}`}
                   />
-                  <TextField 
-                    fullWidth 
-                    value={post.text}
-                    disabled
-                    multiline
-                    sx={{
-                      marginLeft: '10px',
-                      alignItems: 'flex-start',
-                      // Override the styles for the disabled state
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        WebkitTextFillColor: 'black', // For webkit-based browsers
-                        color: 'black', // For other browsers
-                      },
-                    }}
-                  />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                    <TextField 
+                      fullWidth 
+                      value={post.text}
+                      disabled
+                      multiline
+                      sx={{
+                        marginLeft: '10px',
+                        alignItems: 'flex-start',
+                        // Override the styles for the disabled state
+                        '& .MuiInputBase-input.Mui-disabled': {
+                          WebkitTextFillColor: 'black', // For webkit-based browsers
+                          color: 'black', // For other browsers
+                        },
+                      }}
+                    />
+                    <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%', marginLeft: '10px', marginTop: '5px' }}>
+                      <Typography variant="body1" gutterBottom sx={{ marginRight: '10px' }}>
+                        Rating: 
+                      </Typography>
+                      <Rating name="read-only" value={post.rating} readOnly />
+                    </Box>
+                  </Box>
                 </Box>
                 <Typography variant="caption" color="textSecondary">
                   {dayjs(post.created_at.toDate()).format('YYYY.MM.DD - HH:mm:ss')}
@@ -542,9 +650,14 @@ const UserProfile: React.FC = () => {
                           {dayjs(comment.created_at.toDate()).format('YYYY.MM.DD - HH:mm:ss')}
                         </Typography>
                       </Box>
-                      {<IconButton onClick={() => {handleDeleteComment(index, post.comments, postId, comment)}} sx={{ alignItems: 'start' }}>
-                        <DeleteForeverOutlinedIcon />
-                      </IconButton>}
+                      {(isAdmin || currentUserName === comment.username) && (
+                        <IconButton onClick={() => handleDeleteComment(index, post.comments, postId, comment)} sx={{ alignItems: 'center' }}>
+                          <DeleteForeverOutlinedIcon />
+                        </IconButton>
+                      )}
+                      <IconButton onClick={() => handleReviewOpenDialog(postId, 'comment', comment)}>
+                        <FlagOutlinedIcon sx={{color: 'black'}}/>
+                      </IconButton>
                     </Box>
                   ))}
                 </List>
@@ -675,9 +788,11 @@ const UserProfile: React.FC = () => {
                             Cél befejezése
                           </Button>
                         </Box>
-                        <IconButton onClick={() => handleDeleteUnDoneGoal(index, goalId)}>
-                          <DeleteForeverOutlinedIcon />
-                        </IconButton>
+                        {(isAdmin || currentUserName === goal.created_username) && (
+                          <IconButton onClick={() => handleDeleteUnDoneGoal(index, goalId)}>
+                            <DeleteForeverOutlinedIcon />
+                          </IconButton>
+                        )}
                       </Box>
                   </Box>
                 </Paper>
@@ -702,9 +817,11 @@ const UserProfile: React.FC = () => {
                           Elolvasott könyvek száma: {goal.completed_books}
                         </Typography>
                       </Box>
-                      <IconButton onClick={() => handleDeleteDoneGoal(index, goalId)} sx={{ marginLeft: 'auto' }}>
-                        <DeleteForeverOutlinedIcon />
-                      </IconButton>
+                      {(isAdmin || currentUserName === goal.created_username) && (
+                        <IconButton onClick={() => handleDeleteDoneGoal(index, goalId)} sx={{ marginLeft: 'auto' }}>
+                          <DeleteForeverOutlinedIcon />
+                        </IconButton>
+                      )}
                     </Box>
                   </Paper>
                 );
@@ -726,9 +843,11 @@ const UserProfile: React.FC = () => {
                           Elolvasott könyvek száma: {goal.completed_books}
                         </Typography>
                       </Box>
-                      <IconButton onClick={() => handleDeleteExpiredGoal(index, goalId)} sx={{ marginLeft: 'auto' }}>
-                        <DeleteForeverOutlinedIcon />
-                      </IconButton>
+                      {(isAdmin || currentUserName === goal.created_username) && (
+                        <IconButton onClick={() => handleDeleteExpiredGoal(index, goalId)} sx={{ marginLeft: 'auto' }}>
+                          <DeleteForeverOutlinedIcon />
+                        </IconButton>
+                      )}
                     </Box>
                   </Paper>
                 );
@@ -881,6 +1000,64 @@ const UserProfile: React.FC = () => {
           <Button onClick={handleBookRead} color="primary">
             Mentés
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openReportDialog} onClose={handleReportCloseDialog }>
+        <DialogTitle>Válaszd ki a jelentés okát:</DialogTitle>
+        <DialogContent>
+          <RadioGroup
+            aria-labelledby="demo-radio-buttons-group-label"
+            defaultValue="behaviour"
+            name="radio-buttons-group"
+          >
+            <FormControlLabel value='behaviour' control={<Radio onClick={() => setReportReason('behaviour')} />} label="Nem megfelelő viselkedés a közösségben." />
+            <FormControlLabel value='spam' control={<Radio onClick={() => setReportReason('spam')} />} label="Tiltott tevékenység/Spam." />
+            <FormControlLabel value='offensive' control={<Radio onClick={() => setReportReason('offensive')} />} label="Sértő tartalom vagy tevékenység." />
+            <FormControlLabel value='risk' control={<Radio onClick={() => setReportReason('risk')} />} label="Biztonsági kockázatok vagy visszaélések." />
+            <FormControlLabel value='other' control={<Radio onClick={() => setReportReason('other')} />} label="Egyéb:" />
+          </RadioGroup>
+          <TextField 
+            label='Indoklás'
+            value={textInput}
+            onChange={(event) => setTextInput(event.target.value)}
+            error={error && textInput.trim() === ''}
+            helperText={error && textInput.trim() === '' ? 'Ez a mező kötelező' : ''}
+          >
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleReportCloseDialog}>Mégse</Button>
+          <Button onClick={sendReport}>Jelentés</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openReportReviewDialog} onClose={handleReportReviewCloseDialog}>
+        <DialogTitle>Válaszd ki a jelentés okát:</DialogTitle>
+        <DialogContent>
+          <RadioGroup
+            aria-labelledby="demo-radio-buttons-group-label"
+            defaultValue="behaviour"
+            name="radio-buttons-group"
+          >
+            <FormControlLabel value='behaviour' control={<Radio onClick={() => setReportReason('behaviour')} />} label="Nem megfelelő viselkedés a közösségben." />
+            <FormControlLabel value='spam' control={<Radio onClick={() => setReportReason('spam')} />} label="Tiltott tevékenység/Spam." />
+            <FormControlLabel value='offensive' control={<Radio onClick={() => setReportReason('offensive')} />} label="Sértő tartalom vagy tevékenység." />
+            <FormControlLabel value='risk' control={<Radio onClick={() => setReportReason('risk')} />} label="Biztonsági kockázatok vagy visszaélések." />
+            <FormControlLabel value='other' control={<Radio onClick={() => setReportReason('other')} />} label="Egyéb:" />
+          </RadioGroup>
+          <TextField 
+            label='Indoklás'
+            value={textInput}
+            onChange={(event) => setTextInput(event.target.value)}
+            error={error && textInput.trim() === ''}
+            helperText={error && textInput.trim() === '' ? 'Ez a mező kötelező' : ''}
+          >
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleReportReviewCloseDialog}>Mégse</Button>
+          <Button onClick={sendReportReview}>Jelentés</Button>
         </DialogActions>
       </Dialog>
     </Box>
