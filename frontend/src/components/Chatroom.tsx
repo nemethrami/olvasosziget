@@ -1,12 +1,12 @@
 //import { useParams } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { Box, TextField, Button, List, ListItem, Typography, Paper, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from '@mui/material';
-import { getCurrentUserName, addDataToCollectionWithAutoID, getCollectionByID } from '../services/FirebaseService';
+import { Box, Button, List, ListItem, Typography, Paper, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, InputBase, Divider } from '@mui/material';
+import { getCurrentUserName, addDataToCollectionWithAutoID, getCollectionByID } from '@services/FirebaseService';
 import dayjs from 'dayjs';
 import { DocumentData, onSnapshot, Timestamp } from 'firebase/firestore';
-import { MessageModel } from '../models/MessageModel';
-import { generateRandomId } from '../services/RandomService';
+import { MessageModel } from '@models/MessageModel';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import SendIcon from '@mui/icons-material/Send';
 
 
 type Props = {
@@ -16,7 +16,6 @@ type Props = {
 
 function ChatRoom({ id, roomData }: Props) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  // const { id } = useParams<{ id: string }>();
 
   const [messages, setMessages] = useState<DocumentData[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
@@ -27,7 +26,6 @@ function ChatRoom({ id, roomData }: Props) {
     if (!newMessage.trim()) return;
 
     const newMessageObject: MessageModel = {
-      id: generateRandomId(12),
       user: currentUserName,
       text: newMessage,
       created_at: Timestamp.now(),
@@ -47,7 +45,6 @@ function ChatRoom({ id, roomData }: Props) {
   };
 
   useEffect(() => {
-    // Set up the real-time listener
     const unsubscribe = onSnapshot(getCollectionByID('messages'), (querySnapshot) => {
       const msgs: DocumentData[] = querySnapshot.docs.map(doc => doc.data());
       setMessages(msgs.filter(msg => msg.room_id === id).sort((a, b) => {return a.created_at.toMillis() - b.created_at.toMillis()}))
@@ -55,14 +52,12 @@ function ChatRoom({ id, roomData }: Props) {
       console.error('Error fetching data:', error);
     });
 
-    // Cleanup listener on unmount
     return () => unsubscribe();
   }, [id]);
 
   useEffect(() => {
     const fetchUserName = async () => {
       const userName: string = await getCurrentUserName()
-      //const userName: string = await Promise.resolve('test_user_name');
       setCurrentUserName(userName);
     }
 
@@ -84,12 +79,12 @@ function ChatRoom({ id, roomData }: Props) {
       }}
     >
         <Box>
-          <Box sx={{ display: 'flex', width: '100%', justifyContent: 'center', alignItems: 'center', color: 'grey' }}>
-            <Typography variant="h5" gutterBottom>
+          <Box sx={{ display: 'flex', width: '100%', justifyContent: {xs: 'end', sm: 'center'}, alignItems: 'center', color: 'grey' }}>
+            <Typography variant="h5" gutterBottom sx={{ fontSize: {xs: '0.9rem', sm: '1.3rem'} }}>
               Szoba neve: {id}
             </Typography>
             <IconButton onClick={handleOpenInfoModal} sx={{ marginLeft: '10px', bottom:'5px' }}>
-              <InfoOutlinedIcon />
+              <InfoOutlinedIcon sx={{ fontSize: {xs: '1.2rem', sm: '1.3rem'} }} />
             </IconButton>
           </Box>
 
@@ -99,6 +94,7 @@ function ChatRoom({ id, roomData }: Props) {
           <DialogContent>
             <Typography variant="body1">Létrehozó: {roomData.creator}</Typography>
             <Typography variant="body1">Létrehozva: {dayjs(roomData.created_at.toDate()).format('YYYY.MM.DD - HH:mm:ss')}</Typography>
+            {roomData.is_private && <Typography variant="body1">Jelszó: {roomData.password}</Typography>}
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseInfoModal}>Bezár</Button>
@@ -110,9 +106,10 @@ function ChatRoom({ id, roomData }: Props) {
         sx={{
           flex: 1,
           overflowY: 'auto',
-          marginBottom: 2,
+          marginBottom: 1,
           padding: 2,
-          backgroundColor: '#f5f5f5'
+          boxShadow: 3,
+          backgroundColor: '#fefffe'
         }}
       >
         <List>
@@ -161,30 +158,33 @@ function ChatRoom({ id, roomData }: Props) {
           <div ref={messagesEndRef} />
         </List>
       </Paper>
-      
-      <Box
+
+      <Paper
         component="form"
+        sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', width: '100%', marginBottom: 0 }}
         onSubmit={(e) => {
           e.preventDefault();
           handleSendMessage();
         }}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-        }}
       >
-        <TextField
+        <InputBase
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          variant="outlined"
-          placeholder="Type a message..."
-          fullWidth
-          sx={{ marginRight: 1 }}
+          sx={{ ml: 1, flex: 1, fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'} }}
+          placeholder="Új üzenet"
+          inputProps={{ 'aria-label': 'new message' }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
         />
-        <Button variant="contained" color="primary" onClick={handleSendMessage}>
-          Send
-        </Button>
-      </Box>
+        <Divider sx={{ height: 28, m: 0.5 }} orientation="vertical" />
+        <IconButton color="primary" onClick={handleSendMessage} sx={{ p: '10px' }} aria-label="send-button">
+          <SendIcon sx={{fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}}} />
+        </IconButton>
+      </Paper>
     </Box>
   );
 }

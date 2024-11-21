@@ -24,8 +24,8 @@ import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined
 import ExitToAppOutlinedIcon from '@mui/icons-material/ExitToAppOutlined';
 import { useNavigate } from 'react-router-dom';
 import { ReactNode } from 'react';
-import { getCurrentUserName, handleSignOut, isUserAdmin } from '../services/FirebaseService';
-import AvatarComponent from './AvatarComponent';
+import { getCurrentUserName, handleSignOut, isUserAdmin } from '@services/FirebaseService';
+import AvatarComponent from '@components/AvatarComponent';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 
 const drawerWidth = 240;
@@ -60,7 +60,6 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   alignItems: 'center',
   justifyContent: 'flex-start',
   padding: theme.spacing(0, 1),
-  // necessary for content to be below app bar
   ...theme.mixins.toolbar,
 }));
 
@@ -127,13 +126,11 @@ export default function AppFrame({children}: Props) {
   React.useEffect(() => {
     const fetchUserName = async () => {
       const userName: string = await getCurrentUserName()
-      //const userName: string = await Promise.resolve('test_user_name');
       setCurrentUserName(userName);
     }
 
     const fetchIsAdmin = async () => {
       const admin: boolean = await isUserAdmin()
-      //const userName: string = await Promise.resolve('test_user_name');
       setIsAdmin(admin);
     }
 
@@ -179,7 +176,7 @@ export default function AppFrame({children}: Props) {
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', height: '95%' }}>
       <CssBaseline />
       <AppBar position="fixed" open={open}>
         <Toolbar>
@@ -189,13 +186,14 @@ export default function AppFrame({children}: Props) {
             onClick={handleDrawerOpen}
             edge="start"
             sx={{
-              marginRight: 5,
+              marginRight: 4,
+              paddingLeft: {xs: 1.5, sm: 1},
               ...(open && { display: 'none' }),
             }}
           >
             <MenuIcon sx={{ color: '#f5e6d3' }}/>
           </IconButton>
-          <Typography variant="h5" noWrap component="div" onClick={handleHome} sx={{fontFamily: 'monospace', cursor: 'pointer'}}>
+          <Typography variant="h5" noWrap component="div" onClick={handleHome} sx={{fontFamily: 'monospace', cursor: 'pointer', fontSize: { xs: '1.3rem', sm: '1.5rem' },}}>
             Olvasó Sziget
           </Typography>
         </Toolbar>
@@ -297,7 +295,7 @@ export default function AppFrame({children}: Props) {
           ))}
         </List>
       </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, height: '100%' }}>
         <DrawerHeader />
         {children}
       </Box>

@@ -1,5 +1,5 @@
-import AppFrame from '../components/AppFrame';
-import FollowComponent from '../components/FollowComponent';
+import AppFrame from '@components/AppFrame';
+import FollowComponent from '@components/FollowComponent';
 
 export default function FollowPage() {
   return (

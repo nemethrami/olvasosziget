@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Checkbox, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, IconButton, Divider, List, ListItemText, ListItem, TextField, Rating, Tabs, Tab, DialogContent, Autocomplete, ListItemAvatar, Avatar, Stack, RadioGroup, Radio, FormControlLabel } from '@mui/material';
-import { getStorageRef, getDocRef, getAvatarUrlByUserName, getCollectionByID, postLike, postDislike, getCurrentUserName, postComment, postCommentDelete, deleteDocDataByID, updateGoalAttributes, addDataToCollectionWithAutoID, isUserAdmin, getUidByUserName } from '../services/FirebaseService';
+import { Box, Checkbox, Typography, Paper, Dialog, DialogTitle, DialogActions, Button, IconButton, Divider, List, ListItemText, ListItem, TextField, Rating, Tabs, Tab, DialogContent, Autocomplete, ListItemAvatar, Avatar, Stack, RadioGroup, Radio, FormControlLabel, InputBase, FormControl, InputLabel, Select, MenuItem, OutlinedInput } from '@mui/material';
+import { getStorageRef, getDocRef, getAvatarUrlByUserName, getCollectionByID, postLike, postDislike, getCurrentUserName, postComment, postCommentDelete, deleteDocDataByID, updateGoalAttributes, addDataToCollectionWithAutoID, isUserAdmin, getUidByUserName } from '@services/FirebaseService';
 import { getDownloadURL, uploadBytes } from 'firebase/storage';
 import { DocumentData, onSnapshot, QueryDocumentSnapshot, Timestamp, updateDoc } from 'firebase/firestore';
-import AvatarComponent from './AvatarComponent';
+import AvatarComponent from '@components/AvatarComponent';
 import { useParams } from 'react-router-dom';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import DeleteIcon from '@mui/icons-material/Delete';
 import dayjs from 'dayjs';
-import edition_placeholder from '../assets/edition_placeholder.png'
-import { CommentModel } from '../models/ReviewModel';
+import edition_placeholder from '@assets/edition_placeholder.png'
+import { CommentModel } from '@models/ReviewModel';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import CircularProgress, {
   CircularProgressProps,
 } from '@mui/material/CircularProgress';
-import { GoalBooksModel, GoalModel } from '../models/GoalModel';
-import { BookModel } from '../models/BookModel';
+import { GoalBooksModel, GoalModel } from '@models/GoalModel';
+import { BookModel } from '@models/BookModel';
 import axios from 'axios';
 import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
-import { ReportModel } from '../models/ReportModel';
+import { ReportModel } from '@models/ReportModel';
+import SendIcon from '@mui/icons-material/Send';
 
 function CircularProgressWithLabel(
   props: CircularProgressProps & { value: number },
@@ -59,6 +60,7 @@ const UserProfile: React.FC = () => {
   const [openReportDialog, setOpenReportDialog] = useState(false);
   const [openReportReviewDialog, setOpenReportReviewDialog] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const [goalType, setGoalType] = useState<string>('Elkezdett célok');
   const [tabValue, setTabValue] = React.useState(0);
 
   const [newComments, setNewComments] = useState<string[]>([]);
@@ -93,7 +95,6 @@ const UserProfile: React.FC = () => {
     const fetchIsAdmin = async () => {
       const admin: boolean = await isUserAdmin();
       const uName: string = await getCurrentUserName();
-      //const userName: string = await Promise.resolve('test_user_name');
       setIsAdmin(admin);
       setCurrentUserName(uName);
     }
@@ -101,7 +102,6 @@ const UserProfile: React.FC = () => {
     fetchIsAdmin();
   }, []);
 
-  // Fetch books from Google Books API
   const fetchBooks = async (query: string) => {
     try {
       const response = await axios.get('https://www.googleapis.com/books/v1/volumes', {
@@ -113,7 +113,6 @@ const UserProfile: React.FC = () => {
       });
 
       setOptions(response.data.items || []);
-      console.log(options)
     } catch (error) {
       console.error("Error fetching data from Google Books API", error);
     }
@@ -122,7 +121,6 @@ const UserProfile: React.FC = () => {
   function handleOptionClick(event: React.ChangeEvent<HTMLInputElement>, selectedBook: BookModel | null) {
     if (!selectedBook) return;
 
-    console.log(selectedBooks)
     setSelectedBooks((prevList) => {
       const exists = prevList.some(item => item.id === selectedBook.id);
       return exists ? prevList : [...prevList, selectedBook];
@@ -135,7 +133,6 @@ const UserProfile: React.FC = () => {
   }
 
   useEffect(() => {
-    // Set up the real-time listener
     const unsubscribe = onSnapshot(getCollectionByID('reviews'), (querySnapshot) => {
       const filteredResult = querySnapshot.docs.filter(doc => doc.data().created_username === id);
       const data: DocumentData[] = filteredResult.map(doc => doc.data());
@@ -146,12 +143,10 @@ const UserProfile: React.FC = () => {
       console.error('Error fetching review data:', error);
     });
 
-    // Cleanup listener on unmount
     return () => unsubscribe();
   }, [id]);
 
   useEffect(() => {
-    // Set up the real-time listener
     const unsubscribe = onSnapshot(getCollectionByID('goals'), (querySnapshot) => {
       const now = new Date();
       const filteredResult = querySnapshot.docs.filter(doc => doc.data().created_username === id);
@@ -168,7 +163,6 @@ const UserProfile: React.FC = () => {
       console.error('Error fetching goal data:', error);
     });
 
-    // Cleanup listener on unmount
     return () => unsubscribe();
   }, [id]);
 
@@ -206,12 +200,9 @@ const UserProfile: React.FC = () => {
     const storageRef = getStorageRef(`profilePictures/${userId}.jpg`);
 
     try {
-        // Upload file to Firebase Storage
         await uploadBytes(storageRef, selectedImage);
-        // Get the download URL
         const downloadURL = await getDownloadURL(storageRef);
     
-        // Save the URL to Firestore
         await updateDoc(getDocRef('users', userId), {
             avatar_url: downloadURL,
         });
@@ -359,7 +350,7 @@ const UserProfile: React.FC = () => {
     const otherBooks: GoalBooksModel[] = currentGoal.books_to_read.filter((item: GoalBooksModel) => item.book !== goalBook.book);
 
     await updateGoalAttributes(currentGoalId, {
-      books_to_read: [...otherBooks, {book: goalBook.book, is_checked: event.target.checked}]
+      books_to_read: [...otherBooks, {book: goalBook.book, is_checked: event.target.checked, checked_at: Timestamp.now()}]
     });
   };
 
@@ -415,12 +406,6 @@ const UserProfile: React.FC = () => {
     );
 
     await postCommentDelete(postId, comment);
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, idx: number, comments: CommentModel[], newComment: string, postId: string) => {
-    if (event.key === 'Enter') {
-      handleAddComment(idx, comments, newComment,  postId);
-    }
   };
 
   const handleCommentChange = (index: number, value: string) => {
@@ -497,46 +482,49 @@ const UserProfile: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ marginBottom: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: '100px' }}>
-      <Box>
-          <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
+      <Box sx={{ marginBottom: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: {xs: 'column', md: 'row'}, gap: {xs: '10px', md: '40px'} }}>
+        <Box>
+          <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
             <AvatarComponent
-              sx={{ width: 80, height: 80, cursor: 'pointer' }}
+              sx={{ width: {xs: '50px', sm: '60px', md: '70px', lg: '80px'}, height: {xs: '50px', sm: '60px', md: '70px', lg: '80px'}, cursor: 'pointer' }}
               onClick={handleDialogOpen}
               aUrl={avatarUrl}
             />
-            <Typography variant="h6" sx={{ color: 'black' }}>@{id}</Typography>
-            <IconButton onClick={() => setOpenReportDialog(true)}>
-              <FlagOutlinedIcon sx={{color: 'black'}}/>
+            <Typography variant="h6" sx={{ color: 'black', fontSize: {xs: '1rem', sm: '1.2rem', md: '1.3rem', lg: '1.5rem'} }}>@{id}</Typography>
+            <IconButton onClick={() => setOpenReportDialog(true)} sx={{ '&.MuiButtonBase-root': { margin: 0 } }}>
+              <FlagOutlinedIcon sx={{color: 'black', fontSize: {xs: '1rem', sm: '1.2rem', md: '1.3rem', lg: '1.5rem'}}}/>
             </IconButton>
           </Stack>
         </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black' }}>
-            {posts.length}
-          </Typography>
-          <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black' }}>
-            Értékelés
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black' }}>
-            {doneGoals.length + unDoneGoals.length}
-          </Typography>
-          <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black' }}>
-            Célok
-          </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black', fontSize: {xs: '0.9rem', sm: '1rem', md: '1.1rem', lg: '1.2rem'} }}>
+              {posts.length}
+            </Typography>
+            <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black', fontSize: {xs: '0.8rem', sm: '0.9rem', md: '1rem', lg: '1.1rem'} }}>
+              Értékelések
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black', fontSize: {xs: '0.9rem', sm: '1rem', md: '1.1rem', lg: '1.2rem'} }}>
+              {doneGoals.length + unDoneGoals.length}
+            </Typography>
+            <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', color: 'black', fontSize: {xs: '0.8rem', sm: '0.9rem', md: '1rem', lg: '1.1rem'} }}>
+              Célok
+            </Typography>
+          </Box>
         </Box>
       </Box>
       <Tabs value={tabValue} onChange={handleTabChange} centered 
         sx={{ 
-          marginBottom: '40px',
-          '& .MuiTabs-indicator': {
-            backgroundColor: '#794f29', 
-          }
+            marginBottom: '40px',
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#794f29', 
+            }
           }}>
-        <Tab label="Könyv értékelések" 
+        <Tab label="Értékelések" 
           sx={{ 
+            fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'},
             color:'#794f29', 
             '&.Mui-selected': {
               color: '#794f29',
@@ -545,6 +533,7 @@ const UserProfile: React.FC = () => {
         />
         <Tab label="Célok" 
           sx={{ 
+            fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'},
             color:'#794f29', 
             '&.Mui-selected': {
               color: '#794f29',
@@ -563,51 +552,56 @@ const UserProfile: React.FC = () => {
                 key={postId}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: 2 }}>
-                  <Typography variant="body1" gutterBottom sx={{ marginRight: 'auto' }}>
+                  <Typography variant="body1" gutterBottom sx={{ marginRight: 'auto', fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}, }}>
                     {post.book.volumeInfo.title}
                   </Typography>
                   {(isAdmin || currentUserId === post.created_uid) && (
                     <IconButton onClick={() => {handleDeletePost(index, postId)}} sx={{ alignItems: 'start' }}>
-                      <DeleteForeverOutlinedIcon />
+                      <DeleteForeverOutlinedIcon sx={{fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}}} />
                     </IconButton>
                   )}
                   <IconButton onClick={() => handleReviewOpenDialog(postId, 'review')}>
-                    <FlagOutlinedIcon sx={{color: 'black'}}/>
+                    <FlagOutlinedIcon sx={{color: 'black', fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'},}}/>
                   </IconButton>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-start', width: '100%' }}>
-                  <img
-                      src={`${post.book.volumeInfo.imageLinks?.thumbnail.replace('http://', 'https://') || edition_placeholder}?w=248&fit=crop&auto=format`}
-                      alt={post.book.volumeInfo.title}
-                      loading="lazy"
-                      style={{ width: '10%', height: 'auto' }}
-                      id={`thumbnail-img-${postId}`}
-                  />
-                  <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                  <Box sx={{ display: {xs: 'none', sm: 'flex'}, width: '10%', height: 'auto' }}>
+                    <img
+                        src={`${post.book.volumeInfo.imageLinks?.thumbnail.replace('http://', 'https://') || edition_placeholder}?w=248&fit=crop&auto=format`}
+                        alt={post.book.volumeInfo.title}
+                        loading="lazy"
+                        style={{ width: '100%', height: '100%' }}
+                        id={`thumbnail-img-${postId}`}
+                    />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', marginLeft: {xs: 0, sm: '10px'} }}>
                     <TextField 
                       fullWidth 
                       value={post.text}
                       disabled
                       multiline
                       sx={{
-                        marginLeft: '10px',
                         alignItems: 'flex-start',
-                        // Override the styles for the disabled state
                         '& .MuiInputBase-input.Mui-disabled': {
-                          WebkitTextFillColor: 'black', // For webkit-based browsers
-                          color: 'black', // For other browsers
+                          padding: 0,
+                          fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'},
+                          WebkitTextFillColor: 'black',
+                          color: 'black',
                         },
+                        '& .MuiInputBase-root': {
+                          fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'},
+                        }
                       }}
                     />
-                    <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%', marginLeft: '10px', marginTop: '5px' }}>
-                      <Typography variant="body1" gutterBottom sx={{ marginRight: '10px' }}>
+                    <Box sx={{ display: 'flex', flexDirection: {xs: 'column', sm: 'row'}, width: '100%', marginTop: '5px' }}>
+                      <Typography variant="body1" gutterBottom sx={{ marginRight: '10px', fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'} }}>
                         Rating: 
                       </Typography>
-                      <Rating name="read-only" value={post.rating} readOnly />
+                      <Rating name="read-only" value={post.rating} readOnly sx={{fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}}} />
                     </Box>
                   </Box>
                 </Box>
-                <Typography variant="caption" color="textSecondary">
+                <Typography variant="caption" color="textSecondary" sx={{fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}}}>
                   {dayjs(post.created_at.toDate()).format('YYYY.MM.DD - HH:mm:ss')}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', marginTop: 1 }}>
@@ -615,48 +609,61 @@ const UserProfile: React.FC = () => {
                     onClick={() => post.likes.includes(currentUserId) ? handleDislike(index, post.likes, postId) : handleLike(index, post.likes, postId)}
                     sx={{ color: post.likes.includes(currentUserId) ? 'blue' : 'grey' }}
                   >
-                    <ThumbUpIcon />
+                    <ThumbUpIcon sx={{fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}}} />
                   </IconButton>
-                  <Typography variant="body2">{post.likes.length} likes</Typography>
+                  <Typography variant="body2" sx={{fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}}}>{post.likes.length} likes</Typography>
                 </Box>
                 <Divider sx={{ marginY: 2, borderColor: 'black' }} />
-                <Typography variant="subtitle1">Comments</Typography>
-                <Box sx={{ display: 'flex', marginTop: 1 }}>
-                  <TextField
-                    value={newComments[index]}
-                    onChange={(e) => handleCommentChange(index, e.target.value)}
-                    placeholder="Write a comment..."
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    sx={{ marginRight: 1 }}
-                    onKeyDown={(e) => handleKeyDown(e, index, post.comments, newComments[index], postId)}
-                  />
-                  <Button variant="contained" onClick={() => handleAddComment(index, post.comments, newComments[index], postId)}>
-                    Add
-                  </Button>
+                <Typography variant="subtitle1" sx={{fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}}}>Comments</Typography>
+                <Box sx={{ display: 'flex', flexDirection: {xs: 'column', sm: 'row'}, marginTop: 1 }}>
+                  <Paper
+                    component="form"
+                    sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', width: '100%' }}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleAddComment(index, post.comments, newComments[index], postId);
+                    }}
+                  >
+                    <InputBase
+                      value={newComments[index]}
+                      onChange={(e) => handleCommentChange(index, e.target.value)}
+                      sx={{ ml: 1, flex: 1, fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'} }}
+                      placeholder="Új komment"
+                      inputProps={{ 'aria-label': 'new comment' }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddComment(index, post.comments, newComments[index], postId);
+                        }
+                      }}
+                    />
+                    <Divider sx={{ height: 28, m: 0.5 }} orientation="vertical" />
+                    <IconButton color="primary" onClick={() => handleAddComment(index, post.comments, newComments[index], postId)} sx={{ p: '10px' }} aria-label="send-button">
+                      <SendIcon sx={{fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}}} />
+                    </IconButton>
+                  </Paper>
                 </Box>
                 <List sx={{ maxHeight: 200, overflowY: 'auto' }}>
                   {post.comments.map((comment, com_index) => (
                     <Box sx={{ marginBottom: '10px', backgroundColor: '#d0e7d0', borderRadius: '20px', display: 'flex', flexDirection: 'row' }} key={com_index}>
                       <Box sx={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column', marginRight: 'auto' }}>
-                        <Typography variant="body1" color="textSecondary" sx={{ paddingLeft: '15px' }}>
+                        <Typography variant="body1" color="textSecondary" sx={{ paddingLeft: '15px', fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'} }}>
                           {comment.username}
                         </Typography>
                         <ListItem key={com_index} sx={{ wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', p: '0', paddingLeft: '15px' }}>
-                          <ListItemText primary={comment.text} />
+                          <ListItemText primary={comment.text} sx={{'& .MuiTypography-root': {fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}}}} />
                         </ListItem>
-                        <Typography variant="caption" color="textSecondary" sx={{ paddingLeft: '15px' }}>
+                        <Typography variant="caption" color="textSecondary" sx={{ paddingLeft: '15px', fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'} }}>
                           {dayjs(comment.created_at.toDate()).format('YYYY.MM.DD - HH:mm:ss')}
                         </Typography>
                       </Box>
                       {(isAdmin || currentUserName === comment.username) && (
-                        <IconButton onClick={() => handleDeleteComment(index, post.comments, postId, comment)} sx={{ alignItems: 'center' }}>
-                          <DeleteForeverOutlinedIcon />
+                        <IconButton onClick={() => handleDeleteComment(index, post.comments, postId, comment)} sx={{ alignItems: 'center', padding: {xs: 0, sm: 1} }}>
+                          <DeleteForeverOutlinedIcon sx={{fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}}} />
                         </IconButton>
                       )}
-                      <IconButton onClick={() => handleReviewOpenDialog(postId, 'comment', comment)}>
-                        <FlagOutlinedIcon sx={{color: 'black'}}/>
+                      <IconButton onClick={() => handleReviewOpenDialog(postId, 'comment', comment)} sx={{padding: {xs: 0, sm: 1}}}>
+                        <FlagOutlinedIcon sx={{color: 'black', fontSize: {xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem'}}}/>
                       </IconButton>
                     </Box>
                   ))}
@@ -668,18 +675,47 @@ const UserProfile: React.FC = () => {
       )}
 
       {tabValue === 1 && (
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexDirection: 'column', width: '100%' }}>
-          <Box sx={{ display: 'flex', width: '100%' }} gap={5}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', width: '33%' }}>
-              <Typography variant="h6" sx={{ 
-                color: '#895737',
-                fontWeight: '600',
-                fontFamily: 'Times New Roman',  
-                marginBottom: 1, // Opció: margó a célok oszlop és a cím között
-                marginRight: '15px'
-              }}>
-                Elkezdett célok
-              </Typography>
+        <Box sx={{ display: 'flex', alignItems: {xs: 'center', md: 'flex-start'}, justifyContent: 'space-between', flexDirection: 'column', width: '100%' }}>
+          <Box sx={{ m: 1, width: '50%', display: {xs: 'flex', md: 'none'}, alignItems: 'center', justifyContent: 'center' }}>
+            <FormControl 
+              sx={{ 
+                m: 1, 
+                width: '70%', 
+                '& .MuiInputBase-root': {
+                  fontSize: {xs: '0.75rem', sm: '0.9rem'},
+                } 
+              }}
+            >
+              <InputLabel id="goal-type-select">Célok</InputLabel>
+              <Select
+                labelId="goal-type-select"
+                id="goal-type-select"
+                value={goalType}
+                onChange={() => {}}
+                input={<OutlinedInput label="Cél" />}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 48 * 4.5 + 8,
+                      width: '20%',
+                    },
+                  },
+                }}
+              >
+                {['Elkezdett célok', 'Befejezett célok', 'Elbukott célok'].map((gType) => (
+                  <MenuItem
+                    key={gType}
+                    value={gType}
+                    onClick={() => setGoalType(gType)}
+                    sx={{fontSize: {xs: '0.9rem', sm: '0.9rem'},}}
+                  >
+                    {gType}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {id === currentUserName && 
               <Button onClick={() => handleNewGoal()}
                 sx={{ 
                   backgroundColor: '#eae2ca', 
@@ -690,22 +726,58 @@ const UserProfile: React.FC = () => {
                   borderRadius: '6px',
                   cursor: 'pointer',
                   border: 'none',
-                  transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                  fontSize: {xs: '0.6rem', sm: '0.65rem'},
+                  transition: 'background-color 0.8s ease',
                   '&:hover': {
-                    backgroundColor: '#90784f', // Change background color on hover
+                    backgroundColor: '#90784f',
                     color: '#f3e9dc',
                   }
                 }}
-                >
+              >
                 + Új cél
               </Button>
+            }
+          </Box>
+
+          <Box sx={{ display: {xs: 'none', md: 'flex'}, width: '100%' }} gap={5}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '33%' }}>
+              <Typography variant="h6" sx={{ 
+                color: '#895737',
+                fontWeight: '600',
+                fontFamily: 'Times New Roman',  
+                marginBottom: 1, 
+                marginRight: '15px'
+              }}>
+                Elkezdett célok
+              </Typography>
+              {id === currentUserName && 
+                <Button onClick={() => handleNewGoal()}
+                  sx={{ 
+                    backgroundColor: '#eae2ca', 
+                    color: '#895737',
+                    fontWeight: '600',
+                    height:'30px',
+                    fontFamily: 'Times New Roman', 
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    border: 'none',
+                    transition: 'background-color 0.8s ease', 
+                    '&:hover': {
+                      backgroundColor: '#90784f', 
+                      color: '#f3e9dc',
+                    }
+                  }}
+                >
+                  + Új cél
+                </Button>
+              }
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'center', width: '33%' }}>
             <Typography variant="h6" sx={{ 
                 color: '#895737',
                 fontWeight: '600',
                 fontFamily: 'Times New Roman',  
-                marginBottom: 1, // Opció: margó a célok oszlop és a cím között
+                marginBottom: 1, 
                 marginRight: '15px'
               }}>
                 Befejezett célok
@@ -716,7 +788,7 @@ const UserProfile: React.FC = () => {
                 color: '#895737',
                 fontWeight: '600',
                 fontFamily: 'Times New Roman',  
-                marginBottom: 1, // Opció: margó a célok oszlop és a cím között
+                marginBottom: 1, 
                 marginRight: '15px'
               }}>
                 Elbukott célok
@@ -724,9 +796,9 @@ const UserProfile: React.FC = () => {
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%' }} gap={3}>
+          <Box sx={{ display: 'flex', alignItems: {xs: 'center', md: 'flex-start'}, justifyContent: {xs: 'center', md: 'none'}, width: '100%' }} gap={3}>
             {/* Elkezdett célok cím */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', width: '33%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
+            <Box sx={{ display: {xs: goalType === 'Elkezdett célok' ? 'flex' : 'none', md: 'flex'}, flexDirection: 'column', width: {xs: '80%', md: '33%'}, maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
               {unDoneGoalDatas.map((goal, index) => {
                 const goalId = unDoneGoals[index].id;
 
@@ -735,13 +807,28 @@ const UserProfile: React.FC = () => {
                   <Box sx={{ display: 'flex', flexDirection:'column', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                       <Box sx={{display:'flex', flexDirection:'row', width:'100%'}}>
                         <Box sx={{display:'flex', width:'50%', flexDirection:'column', marginRight:'auto',}}>
-                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', 
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: {xs: '0.9rem', sm: '1rem', md: '1.1rem'}
+                            }}
+                          >
                             Célnév: {goal.goal_name}
                           </Typography>
-                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', 
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: {xs: '0.7rem', sm: '0.75rem', md: '0.8rem'}
+                            }}
+                          >
                             Elolvasandó könyvek száma: {goal.goal_amount}
                           </Typography>
-                          <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', 
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: {xs: '0.7rem', sm: '0.75rem', md: '0.8rem'}
+                            }}
+                          >
                             Elolvasott könyvek száma: {goal.completed_books}
                           </Typography>
                         </Box>
@@ -758,8 +845,9 @@ const UserProfile: React.FC = () => {
                             sx={{ 
                               backgroundColor: '#eae2ca',  
                               color: '#895737', 
-                              width: '95%',  // Gomb szélessége kitölti az oszlopot
+                              width: '95%', 
                               height: '35px',
+                              fontSize: {xs: '0.7rem', sm: '0.75rem', lg: '0.9rem'},
                               transition: 'background-color 0.8s ease',
                               '&:hover': {
                                 backgroundColor: '#90784f',
@@ -775,8 +863,9 @@ const UserProfile: React.FC = () => {
                             sx={{ 
                               backgroundColor: '#eae2ca',  
                               color: '#895737', 
-                              width: '95%',  // Gomb szélessége kitölti az oszlopot
+                              width: '95%',
                               height: '35px',
+                              fontSize: {xs: '0.7rem', sm: '0.75rem', lg: '0.9rem'},
                               transition: 'background-color 0.8s ease',
                               '&:hover': {
                                 backgroundColor: '#90784f',
@@ -802,7 +891,7 @@ const UserProfile: React.FC = () => {
             </Box>
 
             {/* Completed Goals Column */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', width: '33%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
+            <Box sx={{ display: {xs: goalType === 'Befejezett célok' ? 'flex' : 'none', md: 'flex'}, flexDirection: 'column', width: {xs: '100%', md: '33%'}, maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
               {doneGoalDatas.map((goal, index) => {
                 const goalId = doneGoals[index].id;
 
@@ -810,10 +899,10 @@ const UserProfile: React.FC = () => {
                   <Paper sx={{ padding: 2, width:'100%', marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', fontSize: {xs: '0.9rem', sm: '1rem', md: '1.1rem'} }}>
                           Célnév: {goal.goal_name}
                         </Typography>
-                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', fontSize: {xs: '0.7rem', sm: '0.75rem', md: '0.8rem'} }}>
                           Elolvasott könyvek száma: {goal.completed_books}
                         </Typography>
                       </Box>
@@ -828,7 +917,7 @@ const UserProfile: React.FC = () => {
               })}
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', width: '33%', maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
+            <Box sx={{ display: {xs: goalType === 'Elbukott célok' ? 'flex' : 'none', md: 'flex'}, flexDirection: 'column', width: {xs: '100%', md: '33%'}, maxWidth: '1500px', border: '1px solid', borderColor: 'grey', padding: 2 }}>
               {expiredGoalDatas.map((goal, index) => {
                 const goalId = expiredGoals[index].id;
 
@@ -836,10 +925,10 @@ const UserProfile: React.FC = () => {
                   <Paper sx={{ padding: 2, width:'100%', marginBottom: 2, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-all', backgroundColor: '#eae2ca' }} key={goalId}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', fontSize: {xs: '0.9rem', sm: '1rem', md: '1.1rem'} }}>
                           Célnév: {goal.goal_name}
                         </Typography>
-                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737' }}>
+                        <Typography variant="body1" sx={{ marginRight: 'auto', fontFamily: 'Times New Roman', fontWeight: '600', color: '#895737', fontSize: {xs: '0.7rem', sm: '0.75rem', md: '0.8rem'} }}>
                           Elolvasott könyvek száma: {goal.completed_books}
                         </Typography>
                       </Box>
@@ -911,18 +1000,18 @@ const UserProfile: React.FC = () => {
                 if (newInputValue) {
                   fetchBooks(newInputValue);
                 } else {
-                  setOptions([]); // Clear options if the input is empty
+                  setOptions([]);
                 }
               }}
               renderInput={(params) => (
                 <TextField {...params} label="Search for books" variant="outlined" />
               )}
               renderOption={(props, option) => (
-                <li {...props} key={option.id}> {/* Use a unique key here */}
+                <li {...props} key={option.id}>
                   {`${option.volumeInfo.authors}: ${option.volumeInfo.title}`}
                 </li>
               )}
-              open={searchQuery !== '' && options.length > 0} // Only open if there are results and input is not empty
+              open={searchQuery !== '' && options.length > 0} 
               onChange={handleOptionClick}
               sx={{}}
               fullWidth
@@ -976,18 +1065,18 @@ const UserProfile: React.FC = () => {
                   onChange={(e) => handleBookReadSelect(e, goalBook)}
                 />
                 <ListItemAvatar>
-                    <Avatar>
-                      <img 
-                        src={goalBook.book.volumeInfo.imageLinks?.thumbnail.replace('http://', 'https://') || edition_placeholder} 
-                        alt="Book thumbnail"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                        }} 
-                      />
-                    </Avatar>
-                  </ListItemAvatar>
+                  <Avatar>
+                    <img 
+                      src={goalBook.book.volumeInfo.imageLinks?.thumbnail.replace('http://', 'https://') || edition_placeholder} 
+                      alt="Book thumbnail"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }} 
+                    />
+                  </Avatar>
+                </ListItemAvatar>
                 <ListItemText primary={`${goalBook.book.volumeInfo.authors}: ${goalBook.book.volumeInfo.title}`} />
               </ListItem>
             ))}

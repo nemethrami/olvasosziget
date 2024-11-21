@@ -1,22 +1,24 @@
 import axios from 'axios';
 import { useState, useRef, useEffect } from 'react';
-import { BookModel } from '../models/BookModel';
-import edition_placeholder from '../assets/edition_placeholder.png'
+import { BookModel } from '@models/BookModel';
+import edition_placeholder from '@assets/edition_placeholder.png'
 import ImageList from '@mui/material/ImageList';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
 import IconButton from '@mui/material/IconButton';
 import InfoIcon from '@mui/icons-material/Info';
-import "./BookSearch.css";
 import SearchIcon from '@mui/icons-material/Search';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Rating, TextField, Typography } from '@mui/material';
-import { addDataToCollectionWithAutoID, getCollectionByID, getCollectionDataByID, getCurrentUserName, getDocsByQuery } from '../services/FirebaseService';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Rating, TextField, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { addDataToCollectionWithAutoID, getCollectionByID, getCollectionDataByID, getCurrentUserName, getDocsByQuery } from '@services/FirebaseService';
 import { CollectionReference, DocumentData, query, Query, QueryDocumentSnapshot, QuerySnapshot, Timestamp, where } from 'firebase/firestore';
-import { ReviewModel } from '../models/ReviewModel';
+import { ReviewModel } from '@models/ReviewModel';
 import InputAdornment from '@mui/material/InputAdornment';
+import { useNavigate } from 'react-router-dom';
 
 
 function BookSearch() {
+    const navigate = useNavigate();
+    const theme = useTheme();
     const [book, setBook] = useState<string>('');
     const [review, setReview] = useState<string>('');
     const [currentBook, setCurrentBook] = useState<BookModel | null>(null);
@@ -32,26 +34,30 @@ function BookSearch() {
     const [openReviewDialog, setOpenReviewDialog] = useState<boolean>(false);
     const API_KEY = 'AIzaSyCZ0PamLM1OwHLSQ-qNab8hUhHGjGr0Bjs';
     //const API_KEY = process.env.REACT_APP_GOOGLE_BOOKS_API_KEY;
-    const cols: number = 4;
+    const isXs: boolean = useMediaQuery(theme.breakpoints.down('sm'));
+    const isSm: boolean = useMediaQuery(theme.breakpoints.up('sm') && theme.breakpoints.down('md'));
+    const cols: number = isXs ? 2 : isSm ? 3 : 4;
 
     const fetchPosts = async () => {
         const currentUid: string | null = localStorage.getItem('uid')
         if (!currentUid) return;
 
+        setCurrentUsername(await getCurrentUserName());
+
         const reviewsRef: CollectionReference<DocumentData, DocumentData> = getCollectionByID('reviews');
         const q: Query<DocumentData, DocumentData> = query(reviewsRef, where('created_uid', '==', currentUid))
   
         const querySnapshot: QueryDocumentSnapshot<DocumentData, DocumentData>[] = await getDocsByQuery(q);
+        if (!querySnapshot) return;
+
         const datas: BookModel[] = querySnapshot.map(doc => doc.data().book)
         const uniqueItems = datas.filter((item, index, self) =>
           index === self.findIndex((t) => t.id === item.id)
         );
         setBooks(uniqueItems);
-        setCurrentUsername(await getCurrentUserName());
     }
 
     useEffect(() => {
-        if (!localStorage.getItem('uid')) return;
         fetchPosts();
     }, []);
 
@@ -114,7 +120,7 @@ function BookSearch() {
 
     async function getAverageRatingForBook(title: string) {
         function getAverage(numbers: number[]): number {
-            if (numbers.length === 0) return 0.0; // Handle case when the array is empty
+            if (numbers.length === 0) return 0.0;
           
             const total = numbers.reduce((sum, num) => sum + num, 0);
             return total / numbers.length;
@@ -164,7 +170,7 @@ function BookSearch() {
                         endAdornment: (
                         <InputAdornment position="end">
                             <IconButton type="submit" sx={{ p: '10px' }} aria-label="search" onClick={(e) => fetchBooks(e)}>
-                            <SearchIcon />
+                                <SearchIcon />
                             </IconButton>
                         </InputAdornment>
                         ),
@@ -178,7 +184,7 @@ function BookSearch() {
                     {books.map((book: BookModel) => (
                         <ImageListItem 
                             sx={{  }}
-                            key={book.volumeInfo.imageLinks?.thumbnail.replace('http://', 'https://') || edition_placeholder}
+                            key={book.id}
                         >
                             <img
                                 srcSet={`${book.volumeInfo.imageLinks?.thumbnail.replace('http://', 'https://') || edition_placeholder}?w=248&fit=crop&auto=format&dpr=2 2x`}
@@ -188,6 +194,7 @@ function BookSearch() {
                                 onClick={() => openAddReviewDialog(book)}
                             />
                             <ImageListItemBar
+                                sx={{ maxHeight: '20%' }}
                                 title={book.volumeInfo.title}
                                 subtitle={book.volumeInfo.authors}
                                 actionIcon={
@@ -222,9 +229,20 @@ function BookSearch() {
                                 setRatingValue(newValue);
                             }}
                         /> 
-                        <Typography variant="body1" sx={{ marginLeft: '10px' }}>
+                        <span 
+                            style={{ marginLeft: '10px', cursor: 'pointer', color: 'blue' }} 
+                            onClick={() => navigate(`/review/${currentBook.id}`)}
+                            onMouseEnter={(e) => {
+                                const target = e.target as HTMLSpanElement;
+                                target.style.textDecoration = 'underline';
+                            }}
+                            onMouseLeave={(e) => {
+                                const target = e.target as HTMLSpanElement;
+                                target.style.textDecoration = 'none';
+                            }}
+                        >
                             {avgRating.toFixed(1)}
-                        </Typography>
+                        </span>
                     </Box>
                     <Divider></Divider>
                     <Button onClick={() => {setIsNewReview(!isNewReview)}} sx={{ marginTop: '10px' }}>Vélemény írása</Button>

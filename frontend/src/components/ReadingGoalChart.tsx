@@ -1,18 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Chart, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 
-// Register the necessary chart.js components
 Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const ReadingGoalChart: React.FC = () => {
-  // Dummy data for the chart
+interface Props {
+  bookNumbers: number[];
+}
+
+const ReadingGoalChart: React.FC<Props> = ({ bookNumbers }) => {
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  const handleResize = () => {
+    setWindowWidth(window.innerWidth);
+  };
+
+  useEffect(() => {
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   const data = {
-    labels: ['Január', 'Február', 'Március', 'Április', 'Május'],
+    labels: ['Január', 'Február', 'Március', 'Április', 'Május', 'Június', 'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December'],
     datasets: [
       {
         label: 'Olvasott könyvek száma',
-        data: [5, 10, 8, 7, 12], // Ezek a könyvek számai hónapokra lebontva
+        data: bookNumbers,
         backgroundColor: '#858c67',
       },
     ],
@@ -20,6 +34,16 @@ const ReadingGoalChart: React.FC = () => {
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: windowWidth < 600 ? 'y' : 'x',
+    scales: {
+      x: {
+        beginAtZero: true,
+      },
+      y: {
+        beginAtZero: true,
+      },
+    },
     plugins: {
       legend: {
         position: 'top' as const,
@@ -31,7 +55,11 @@ const ReadingGoalChart: React.FC = () => {
     },
   };
 
-  return <Bar data={data} options={options} />;
+  return (
+    <div style={{ width: '80%', height: '400px' }}>
+      <Bar data={data} options={options as any} />;
+    </div>
+  )
 };
 
 export default ReadingGoalChart;

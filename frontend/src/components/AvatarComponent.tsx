@@ -1,8 +1,8 @@
 import { Avatar } from "@mui/material";
 import { useEffect, useState } from "react";
-import { getCurrentUser, getDocData } from "../services/FirebaseService";
+import { getCurrentUser, getDocData } from "@services/FirebaseService";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../config/FirebaseConfig";
+import { auth } from "@config/FirebaseConfig";
 
 type Props = {
     onClick ?: () => void,

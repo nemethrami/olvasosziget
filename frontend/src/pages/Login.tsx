@@ -1,5 +1,5 @@
-import LoginComponent from "../components/LoginComponent";
-import MainFrame from "../components/MainFrame";
+import LoginComponent from "@components/LoginComponent";
+import MainFrame from "@components/MainFrame";
 
 export default function Registration() {
     return (

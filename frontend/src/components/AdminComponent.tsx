@@ -1,7 +1,8 @@
 import { Box, Paper, Tab, Tabs, Typography } from "@mui/material";
-import { collection, DocumentData, onSnapshot } from "firebase/firestore";
+import { DocumentData, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { db } from "../config/FirebaseConfig";
+import * as FirebaseService from '@services/FirebaseService';
+
 
 type Props = {
     setReportData: (p: DocumentData) => void,
@@ -20,10 +21,11 @@ function AdminComponent({setReportData} : Props) {
         other: 'Egyéb'
     }
 
-    useEffect(() => {      
-        const unsubscribe = onSnapshot(collection(db, 'reports'), (querySnapshot) => {
+    useEffect(() => {
+        const reportsRef = FirebaseService.getCollectionByID('reports') 
+        const unsubscribe = onSnapshot(reportsRef, (querySnapshot) => {
           const reports: DocumentData[] = querySnapshot.docs.map((doc) => ({
-            id: doc.id, // Get document ID
+            id: doc.id,
             ...doc.data(),
           }));
 
@@ -62,7 +64,7 @@ function AdminComponent({setReportData} : Props) {
                 justifyContent: 'space-between',
                 padding: 1,
                 width:'100%',
-                marginBottom: 1, // Eltávolított alsó margó
+                marginBottom: 1,
                 borderRadius: 3,
                 backgroundColor: '#eae2ca',
                 color: '#895737',
@@ -95,7 +97,7 @@ function AdminComponent({setReportData} : Props) {
                 overflowY: 'auto',
                 overflow: 'visible',
                 borderRight: '1px solid #d1cfcf',
-                flexDirection: 'column', // Rugalmas elrendezés
+                flexDirection: 'column',
                 position: 'relative',
             }}
             >

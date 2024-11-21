@@ -6,11 +6,10 @@ import Toolbar from '@mui/material/Toolbar';
 import CssBaseline from '@mui/material/CssBaseline';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
-import Stack from '@mui/material/Stack';
 import { useNavigate } from 'react-router-dom';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined';
-import '../index.css';
+import 'index.css';
 
 const drawerWidth = 240;
 
@@ -74,21 +73,66 @@ export default function MainHome({ children }: Props) {
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
       <CssBaseline />
       <AppBar position="fixed" open={false}>
-        <Toolbar>
-          <Typography variant="h5" noWrap component="div" onClick={handleMainHome} sx={{ fontFamily: 'monospace', color: '#f5e6d3', cursor: 'pointer' }}>
+        <Toolbar
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          {/* App Title */}
+          <Typography
+            variant="h5"
+            noWrap
+            component="div"
+            onClick={handleMainHome}
+            sx={{
+              fontFamily: 'monospace',
+              color: '#f5e6d3',
+              cursor: 'pointer',
+              fontSize: { xs: '1rem', sm: '1.5rem' },
+            }}
+          >
             Olvasó Sziget
           </Typography>
-          <Stack position={'fixed'} right='30px' direction="row">
-            <IconButton onClick={handleLogIn} sx={{ color: '#f5e6d3', fontSize:'1em' }}>
-              <LoginOutlinedIcon></LoginOutlinedIcon>
-              Bejelentkezés
+
+          {/* Buttons */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: { xs: '10px', sm: '20px' },
+              flexWrap: 'wrap',
+            }}
+          >
+            <IconButton
+              onClick={handleLogIn}
+              sx={{
+                color: '#f5e6d3',
+                fontSize: { xs: '0.8rem', sm: '1em' },
+              }}
+            >
+              <LoginOutlinedIcon />
+              <Typography variant="body2" sx={{ ml: 1, display: { xs: 'none', sm: 'inline' }, fontSize: '1em' }}>
+                Bejelentkezés
+              </Typography>
             </IconButton>
-            <IconButton onClick={handleRegistration} sx={{ color: '#f5e6d3', fontSize:'1em' }}>
-              <HowToRegOutlinedIcon></HowToRegOutlinedIcon>
-              Regisztráció
+            <IconButton
+              onClick={handleRegistration}
+              sx={{
+                color: '#f5e6d3',
+                fontSize: { xs: '0.8rem', sm: '1em' },
+              }}
+            >
+              <HowToRegOutlinedIcon />
+              <Typography variant="body2" sx={{ ml: 1, display: { xs: 'none', sm: 'inline' }, fontSize: '1em' }}>
+                Regisztráció
+              </Typography>
             </IconButton>
-          </Stack>
+          </Box>
         </Toolbar>
+
       </AppBar>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <DrawerHeader />

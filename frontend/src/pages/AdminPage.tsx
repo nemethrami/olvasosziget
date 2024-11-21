@@ -1,8 +1,8 @@
 import { Box } from "@mui/material";
-import AdminComponent from "../components/AdminComponent";
-import AppFrame from "../components/AppFrame";
+import AdminComponent from "@components/AdminComponent";
+import AppFrame from "@components/AppFrame";
 import { useState } from "react";
-import ContentComponent from "../components/ContentComponent";
+import ContentComponent from "@components/ContentComponent";
 import { DocumentData } from "firebase/firestore";
 
 
@@ -12,7 +12,6 @@ export default function AdminPage() {
     return (
         <AppFrame> 
             <Box sx={{ display: 'flex', height: '85vh' }}>
-                {/* Bal oldalon a jelentések listája */}
                 <Box sx={{ width: '38%', borderRight: '1px solid #d1cfcf' }}>
                     <AdminComponent setReportData={setReportData} />
                 </Box>

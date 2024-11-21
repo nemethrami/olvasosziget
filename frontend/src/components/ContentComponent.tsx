@@ -1,8 +1,8 @@
 import { Box, Button, ListItemText, TextField, Typography } from "@mui/material";
 import { arrayRemove, DocumentData, onSnapshot, QuerySnapshot, Timestamp, updateDoc } from "firebase/firestore";
-import AvatarComponent from "./AvatarComponent";
+import AvatarComponent from "@components/AvatarComponent";
 import { useNavigate } from "react-router-dom";
-import { addDataToCollection, deleteDocDataByID, getCollectionByID, getDocData, getDocRef, updateDocAttributes } from "../services/FirebaseService";
+import { addDataToCollection, deleteDocDataByID, getCollectionByID, getDocData, getDocRef, updateDocAttributes } from "@services/FirebaseService";
 import { useEffect, useState } from "react";
 
 type Props = {
@@ -42,22 +42,23 @@ function ContentComponent({ reportData }: Props)  {
         }
         
         await addDataToCollection('banned', reportData.reported_content, {user: reportData.reported_content, banned_at: Timestamp.now()});
-        // await handleReportDelete();
+        await handleReportDelete();
     }   
 
     async function contentDelete() {
         if (reportData.comment) {
-            const docRef = getDocRef('reviews', reportData.id);
+            const docRef = getDocRef('reviews', reportData.reported_content);
 
             await updateDoc(docRef, {
                 comments: arrayRemove(reportData.comment),
             });
-
+            
+            await handleReportDelete();
             return;
         }
 
         await deleteDocDataByID('reviews', reportData.id);
-        // await handleReportDelete();
+        await handleReportDelete();
     }
 
     return (
@@ -96,9 +97,9 @@ function ContentComponent({ reportData }: Props)  {
                                 cursor: 'pointer',
                                 border: 'none',
                                 padding: '10px 20px',
-                                transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                                transition: 'background-color 0.8s ease',
                                 '&:hover': {
-                                    backgroundColor: '#90784f', // Change background color on hover
+                                    backgroundColor: '#90784f',
                                     color: '#f3e9dc',
                                 }
                             }}
@@ -116,9 +117,9 @@ function ContentComponent({ reportData }: Props)  {
                                 cursor: 'pointer',
                                 border: 'none',
                                 padding: '10px 20px',
-                                transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                                transition: 'background-color 0.8s ease',
                                 '&:hover': {
-                                    backgroundColor: '#90784f', // Change background color on hover
+                                    backgroundColor: '#90784f',
                                     color: '#f3e9dc',
                                 }
                             }}
@@ -181,9 +182,9 @@ function ContentComponent({ reportData }: Props)  {
                                 cursor: 'pointer',
                                 border: 'none',
                                 padding: '10px 20px',
-                                transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                                transition: 'background-color 0.8s ease',
                                 '&:hover': {
-                                    backgroundColor: '#90784f', // Change background color on hover
+                                    backgroundColor: '#90784f',
                                     color: '#f3e9dc',
                                 }
                             }}
@@ -201,9 +202,9 @@ function ContentComponent({ reportData }: Props)  {
                                 cursor: 'pointer',
                                 border: 'none',
                                 padding: '10px 20px',
-                                transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                                transition: 'background-color 0.8s ease',
                                 '&:hover': {
-                                    backgroundColor: '#90784f', // Change background color on hover
+                                    backgroundColor: '#90784f',
                                     color: '#f3e9dc',
                                 }
                             }}
@@ -266,9 +267,9 @@ function ContentComponent({ reportData }: Props)  {
                                 cursor: 'pointer',
                                 border: 'none',
                                 padding: '10px 20px',
-                                transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                                transition: 'background-color 0.8s ease',
                                 '&:hover': {
-                                    backgroundColor: '#90784f', // Change background color on hover
+                                    backgroundColor: '#90784f',
                                     color: '#f3e9dc',
                                 }
                             }}
@@ -286,9 +287,9 @@ function ContentComponent({ reportData }: Props)  {
                                 cursor: 'pointer',
                                 border: 'none',
                                 padding: '10px 20px',
-                                transition: 'background-color 0.8s ease', // Animáció a háttérszín változásához
+                                transition: 'background-color 0.8s ease',
                                 '&:hover': {
-                                    backgroundColor: '#90784f', // Change background color on hover
+                                    backgroundColor: '#90784f',
                                     color: '#f3e9dc',
                                 }
                             }}

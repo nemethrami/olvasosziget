@@ -1,5 +1,5 @@
 import { Timestamp } from "firebase/firestore"
-import { BookModel } from "./BookModel"
+import { BookModel } from "@models/BookModel"
 
 export type CommentModel = {
     username: string,

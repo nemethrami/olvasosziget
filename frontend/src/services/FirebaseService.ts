@@ -1,8 +1,8 @@
 import { addDoc, arrayRemove, arrayUnion, collection, CollectionReference, deleteDoc, doc, DocumentData, DocumentReference, DocumentSnapshot, getDoc, getDocs, Query, QuerySnapshot, setDoc, updateDoc } from "firebase/firestore";
-import { auth, googleProvider, db, storage } from "../config/FirebaseConfig";
+import { auth, googleProvider, db, storage } from "@config/FirebaseConfig";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { ref } from "firebase/storage";
-import { CommentModel } from "../models/ReviewModel";
+import { CommentModel } from "@models/ReviewModel";
 
 export async function googleSignIn() {
     googleProvider.setCustomParameters({
@@ -56,7 +56,6 @@ export async function getCurrentUserName () {
     if (!getCurrentUser()) return 'User';
 
     userData = await getDocData('users', getCurrentUser()!.uid);
-    // const userData = await Promise.resolve({username: 'test'});
 
     if (!userData) return 'User';
     return userData.username;
@@ -173,4 +172,10 @@ export async function getUidByUserName(userName: string) {
     const collectionData: QuerySnapshot<DocumentData, DocumentData> = await getCollectionDataByID('users');
     const userData = collectionData.docs.filter((doc) => doc.data().username === userName);
     return userData[0].id;
+}
+
+export async function getAllUserName() {
+    const users: QuerySnapshot<DocumentData, DocumentData> = await getCollectionDataByID('users');
+    const userNames: string[] = users.docs.map((doc) => doc.data().username);
+    return userNames || [];
 }
